@@ -14,6 +14,7 @@ except ImportError:
 #   - Create a class to read a 2352/2048 images as 2048 ones; make OffsetedFile inherit from it.
 #   - Create an 'AppendedFile' class, OffsettedFile and WormHoleFile seem to work well now.
 #      (That'd be used to append an OffsettedFile to a WormHoleFile to dump 5+ tracks GDI)
+#   - Create a class to parse GDI files with methods to extract files and bootsector/sorttxt.
 #
 # TODO TODO TODO
 
