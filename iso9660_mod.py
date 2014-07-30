@@ -246,6 +246,70 @@ class ISO9660(_ISO9660_orig):
 
 
 
+class binfile(file):
+    """
+    Class that allows opening a 2352 bytes/sector data cd track as a 2048 bytes/sector one.
+    """
+    def __init__(self, filename, mode = 'auto', *args, **kwargs):
+
+        if (len(args) > 0) and (args[0] not in ['r','rb']):
+            raise NotImplementedError('Only read mode is implemented.')
+
+        file.__init__(self, filename, 'rb')
+
+        file.seek(self,0,2)
+        self.length = file.tell(self)
+        file.seek(self,0,0)
+
+        self.seek(0)
+
+    def realOffset(self,a):
+        return a/2048*2352 + a%2048 + 16
+
+    def seek(self, a, b = 0):
+        if not type(a) == type(0):
+            raise TypeError('First argument must be an integer!')
+
+        if b == 0:
+            self.pointer = a
+        if b == 1:
+            self.pointer += a
+        if b == 2:
+            self.pointer = self.length - a
+
+        realpointer = self.realOffset(self.pointer)
+        file.seek(self, realpointer, 0)
+
+    def read(self, length = None):
+        
+        if length == None:
+            length = self.length - self.pointer
+
+        tmp = 2048 - self.pointer % 2048    # Amount of bytes left until beginning of next sector
+        FutureOffset = self.pointer + length
+        data = ''
+       #     if tmp == 2048:
+       #         chunk = length
+       #     else: 
+       #         chunk = tmp
+       #         tmp = 2048
+        while length:
+            piece = min(length, tmp)
+            tmp = 2048
+            data += file.read(self,piece)
+            length -= piece
+            if not length == 0:
+                file.seek(self,304,1) # Seeking to beginning of next sector, jumping over EDC/ECC of current and header of next sectors.
+
+        self.seek(FutureOffset)
+        return data
+
+    def tell(self):
+        return self.pointer
+
+
+
+
 
 class OffsetedFile(file):
     """
@@ -272,7 +336,7 @@ class OffsetedFile(file):
         self.seek(0)
 
 
-    def seek(self, a, b=0):
+    def seek(self, a, b = 0):
         if b == 0:
             self.pointer = a
         if b == 1:
@@ -286,7 +350,7 @@ class OffsetedFile(file):
             file.seek(self, 0)
 
 
-    def read(self, length=None):
+    def read(self, length = None):
         if length == None:
             length = self.offset + self.length - self.pointer
         tmp = self.pointer
@@ -331,7 +395,7 @@ class WormHoleFile(OffsetedFile):
         OffsetedFile.__init__(self, *args, **kwargs)
 
 
-    def read(self, length=None):
+    def read(self, length = None):
 
         if length == None:
             length = self.offset + self.length - self.pointer
@@ -423,7 +487,7 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
 
         
 
-def bin2iso(src, dest=None, bufsize=1024*2048, outmode='wb', length_override=False):
+def bin2iso(src, dest = None, bufsize = 1024*2048, outmode = 'wb', length_override = False):
     """
     A VERY stupid bin2iso implementation. Not dumb-proof AT ALL.
     
