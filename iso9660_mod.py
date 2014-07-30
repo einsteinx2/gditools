@@ -11,7 +11,6 @@ except ImportError:
 
 # TODO TODO TODO
 #
-#   - Create a class to read a 2352/2048 images as 2048 ones; make OffsetedFile inherit from it.
 #   - Create an 'AppendedFile' class, OffsettedFile and WormHoleFile seem to work well now.
 #      (That'd be used to append an OffsettedFile to a WormHoleFile to dump 5+ tracks GDI)
 #   - Create a class to parse GDI files with methods to extract files and bootsector/sorttxt.
@@ -246,11 +245,19 @@ class ISO9660(_ISO9660_orig):
 
 
 
-class binfile(file):
+class CdImage(file):
     """
     Class that allows opening a 2352 bytes/sector data cd track as a 2048 bytes/sector one.
     """
     def __init__(self, filename, mode = 'auto', *args, **kwargs):
+
+        if mode == 'auto':
+            if filename[-4:] == '.iso': mode = 2048
+            elif filename[-4:] == '.bin': mode = 2352
+
+        elif not mode in [2048, 2352]:
+            raise ValueError('Argument mode should be either 2048 or 2352')
+        self.__mode = mode
 
         if (len(args) > 0) and (args[0] not in ['r','rb']):
             raise NotImplementedError('Only read mode is implemented.')
@@ -267,51 +274,55 @@ class binfile(file):
         return a/2048*2352 + a%2048 + 16
 
     def seek(self, a, b = 0):
-        if not type(a) == type(0):
-            raise TypeError('First argument must be an integer!')
+        if self.__mode == 2048:
+            file.seek(self, a, b)
 
-        if b == 0:
-            self.pointer = a
-        if b == 1:
-            self.pointer += a
-        if b == 2:
-            self.pointer = self.length - a
+        elif self.__mode == 2352:
+            if not type(a) == type(0):
+                raise TypeError('First argument must be an integer!')
 
-        realpointer = self.realOffset(self.pointer)
-        file.seek(self, realpointer, 0)
+            if b == 0:
+                self.binpointer = a
+            if b == 1:
+                self.binpointer += a
+            if b == 2:
+                self.binpointer = self.length - a
+
+            realpointer = self.realOffset(self.binpointer)
+            file.seek(self, realpointer, 0)
 
     def read(self, length = None):
-        
-        if length == None:
-            length = self.length - self.pointer
+        if self.__mode == 2048:
+            return file.read(self, length)
 
-        tmp = 2048 - self.pointer % 2048    # Amount of bytes left until beginning of next sector
-        FutureOffset = self.pointer + length
-        data = ''
-       #     if tmp == 2048:
-       #         chunk = length
-       #     else: 
-       #         chunk = tmp
-       #         tmp = 2048
-        while length:
-            piece = min(length, tmp)
-            tmp = 2048
-            data += file.read(self,piece)
-            length -= piece
-            if not length == 0:
-                file.seek(self,304,1) # Seeking to beginning of next sector, jumping over EDC/ECC of current and header of next sectors.
+        elif self.__mode == 2352:
+            if length == None:
+                length = self.length - self.binpointer
 
-        self.seek(FutureOffset)
-        return data
+            tmp = 2048 - self.binpointer % 2048    # Amount of bytes left until beginning of next sector
+            FutureOffset = self.binpointer + length
+            data = ''
+            while length:
+                piece = min(length, tmp)
+                tmp = 2048  # Allows the first piece to be under a sector (if the pointer originally is not at the beginning of a sector)
+                data += file.read(self,piece)
+                length -= piece
+                # If we're not done reading, it means we reached the end of a sector and we should skip to the beginning of the next one.
+                if not length == 0: 
+                    file.seek(self,304,1) # Seeking to beginning of next sector, jumping over EDC/ECC of current and header of next sectors.
+
+            self.seek(FutureOffset)
+            return data
 
     def tell(self):
-        return self.pointer
+        if self.__mode == 2048:
+            return file.tell(self) 
+        elif self.__mode == 2352:
+            return self.binpointer
 
 
 
-
-
-class OffsetedFile(file):
+class OffsetedFile(CdImage):
     """
     Like a file, but offsetted! Padding is made of 0x00.
 
@@ -327,11 +338,11 @@ class OffsetedFile(file):
         if (len(args) > 0) and (args[0] not in ['r','rb']):
             raise NotImplementedError('Only read mode is implemented.')
 
-        file.__init__(self, filename, 'rb')
+        CdImage.__init__(self, filename)
         
-        file.seek(self,0,2)
-        self.length = file.tell(self)
-        file.seek(self,0,0)
+        CdImage.seek(self,0,2)
+        self.length = CdImage.tell(self)
+        CdImage.seek(self,0,0)
 
         self.seek(0)
 
@@ -345,9 +356,9 @@ class OffsetedFile(file):
             self.pointer = self.length + self.offset - a
 
         if self.pointer > self.offset:
-            file.seek(self, self.pointer - self.offset)
+            CdImage.seek(self, self.pointer - self.offset)
         else:
-            file.seek(self, 0)
+            CdImage.seek(self, 0)
 
 
     def read(self, length = None):
@@ -358,7 +369,7 @@ class OffsetedFile(file):
         if tmp >= self.offset:
             #print 'AFTER OFFSET'
             self.seek(tmp)
-            data = file.read(self, length)
+            data = CdImage.read(self, length)
         elif FutureOffset < self.offset:
             #print 'BEFORE OFFSET'
             data = '\x00'*length
@@ -366,7 +377,7 @@ class OffsetedFile(file):
             #print 'CROSSING OFFSET'
             preData = '\x00'*(self.offset - tmp)
             self.seek(self.offset)
-            postData = file.read(self, FutureOffset - self.offset)
+            postData = CdImage.read(self, FutureOffset - self.offset)
             data = preData + postData
         self.seek(FutureOffset)
         return data
@@ -374,7 +385,6 @@ class OffsetedFile(file):
 
     def tell(self):
         return self.pointer
-
 
 
 
@@ -457,6 +467,8 @@ class WormHoleFile(OffsetedFile):
         self.seek(FutureOffset)     
         return data
 
+
+
 def UpdateLine(text):
     """
     Allows to print suiccessive messages over the last line. Problem occurs if last line is over 100 char long.
@@ -467,7 +479,6 @@ def UpdateLine(text):
     text += ' '*(100-len(text))+'\r'
     sys.stdout.write(text)
     sys.stdout.flush()
-
 
 
 def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
