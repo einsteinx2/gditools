@@ -219,7 +219,7 @@ class ISO9660(_ISO9660_orig):
         path = os.path.dirname(filename)
         if not os.path.exists(path):
             os.makedirs(path)   # Creates the target directories required by the record; this will create empty directories too
-            if verbose: UpdateLine('Created directory: {dirname}'.format(dirname = path))
+            if verbose: print('Created directory: {dirname}'.format(dirname = path))
 
         if rec['flags'] != 2:   # Unless the record represents a directory we dump the file to disc.
             with open(filename, 'wb') as f:
@@ -242,7 +242,7 @@ class ISO9660(_ISO9660_orig):
             self.dump_file_by_record(i, target = target, **kwargs) # DUMPING FILE
 
         if kwargs.has_key('verbose'):
-            if kwargs['verbose']: UpdateLine('Dumping all files done')
+            if kwargs['verbose']: UpdateLine('All files were dumped successfully.')
 
 
 
