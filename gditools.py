@@ -471,14 +471,14 @@ class WormHoleFile(OffsetedFile):
 
 def UpdateLine(text):
     """
-    Allows to print suiccessive messages over the last line. Problem occurs line if force to be 100 chars long.
+    Allows to print successive messages over the last line. Problem occurs line if force to be 80 chars long.
     """
     import sys
-    if len(text) > 100:
-        text = text[:100]
+    if len(text) > 80:
+        text = text[:80]
     if text[-1] == '\r':
         text = text[:-1]
-    text += ' '*(100-len(text))+'\r'
+    text += ' '*(80-len(text))+'\r'
     sys.stdout.write(text)
     sys.stdout.flush()
 
