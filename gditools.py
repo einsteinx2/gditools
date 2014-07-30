@@ -222,7 +222,7 @@ class ISO9660(_ISO9660_orig):
 
         if rec['flags'] != 2:   # Unless the record represents a directory we dump the file to disc.
             with open(filename, 'wb') as f:
-                if verbose: UpdateLine('Dumping file {source} to {target}    ({loc}, {_len})'.format(source = rec['name'],\
+                if verbose: UpdateLine('Dumping file {source} to {target}    ({loc}, {_len})'.format(source = rec['name'].split('/')[-1],\
                                     target = filename, loc = rec['ex_loc'], _len = rec['ex_len'] ))
                 f.write(self.get_file_by_record(rec))
 
@@ -471,9 +471,11 @@ class WormHoleFile(OffsetedFile):
 
 def UpdateLine(text):
     """
-    Allows to print suiccessive messages over the last line. Problem occurs if last line is over 100 char long.
+    Allows to print suiccessive messages over the last line. Problem occurs line if force to be 100 chars long.
     """
     import sys
+    if len(text) > 100:
+        text = text[:100]
     if text[-1] == '\r':
         text = text[:-1]
     text += ' '*(100-len(text))+'\r'
