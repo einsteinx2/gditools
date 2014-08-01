@@ -247,7 +247,7 @@ class ISO9660(_ISO9660_orig):
 
 class CdImage(file):
     """
-    Class that allows opening a 2352 bytes/sector data cd track as a 2048 bytes/sector one.
+    Class that allows opening a 2352 or 2048 bytes/sector data cd track as a 2048 bytes/sector one.
     """
     def __init__(self, filename, mode = 'auto', *args, **kwargs):
 
@@ -292,6 +292,11 @@ class CdImage(file):
             file.seek(self, realpointer, 0)
 
     def read(self, length = None):
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
+
         if self.__mode == 2048:
             return file.read(self, length)
 
@@ -301,15 +306,17 @@ class CdImage(file):
 
             tmp = 2048 - self.binpointer % 2048    # Amount of bytes left until beginning of next sector
             FutureOffset = self.binpointer + length
+            realLength = self.realOffset(FutureOffset) - self.realOffset(self.binpointer)
+            buff = StringIO(file.read(self, realLength)) # This will (hopefully) accelerates readings on HDDs, at the cost of more memory use.
             data = ''
             while length:
                 piece = min(length, tmp)
                 tmp = 2048  # Allows the first piece to be under a sector (if the pointer originally is not at the beginning of a sector)
-                data += file.read(self,piece)
+                data += buff.read(piece)
                 length -= piece
                 # If we're not done reading, it means we reached the end of a sector and we should skip to the beginning of the next one.
                 if not length == 0: 
-                    file.seek(self,304,1) # Seeking to beginning of next sector, jumping over EDC/ECC of current and header of next sectors.
+                    buff.seek(304,1) # Seeking to beginning of next sector, jumping over EDC/ECC of current and header of next sectors.
 
             self.seek(FutureOffset)
             return data
@@ -471,7 +478,7 @@ class WormHoleFile(OffsetedFile):
 
 def UpdateLine(text):
     """
-    Allows to print successive messages over the last line. Problem occurs line if force to be 80 chars long.
+    Allows to print successive messages over the last line. Line is force to be 80 chars long to avoid display issues.
     """
     import sys
     if len(text) > 80:
