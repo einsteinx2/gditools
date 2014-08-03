@@ -227,7 +227,6 @@ class ISO9660(_ISO9660_orig):
                 f.write(self.get_file_by_record(rec))
 
 
-
     def dump_file(self, name, **kwargs):
         self.dump_file_by_record(self.get_record(name), **kwargs)
 
@@ -473,6 +472,67 @@ class WormHoleFile(OffsetedFile):
         # Pretend we're still where we should, in case we went where we shouldn't!
         self.seek(FutureOffset)     
         return data
+
+
+
+class AppendedFiles():
+    def __init__(self, wormfile1, wormfile2 =  None, *args, **kwargs):
+
+        self._f1 = WormHoleFile(**wormfile1)
+
+        self._f1.seek(0,2)
+        self._f1_len = self._f1.tell()
+        self._f1.seek(0,0)
+
+
+        self._f2_len = 0
+        if wormfile2:
+            self._f2 = WormHoleFile(**wormfile2)
+
+            self._f2.seek(0,2)
+            self._f2_len = self._f2.tell()
+            self._f2.seek(0,0)
+
+        self.seek(0,0)
+
+
+    def seek(self, a, b=0):
+        if b == 0:
+            self.MetaPointer = a
+        if b == 1:
+            self.MetaPointer += a
+        if b == 2:
+            self.MetaPointer = self._f1_len + self._f2_len - a
+
+        if self.MetaPointer >= self._f1_len:
+            self._f1.seek(0, 2)
+            self._f2.seek(a - self._f1_len, 0)
+        else:
+            self._f1.seek(a, 0)
+            self._f2.seek(0, 0)
+
+
+    def read(self, length = None):
+        if length == None:
+            length = self._f1_len + self._f2_len - self.MetaPointer
+        tmp = self.MetaPointer
+        FutureOffset = self.MetaPointer + length
+        if FutureOffset < self._f1_len: # Reading inside file1
+            data = self._f1.read(length)
+        elif tmp > self._f1_len:        # Reading inside file2
+            data = self._f2.read(length)
+        else:                           # Reading the end of file1 and beginnig of file2
+            data = self._f1.read(self._f1_len - tmp)
+            data += self._f2.read(FutureOffset - self._f1_len)
+
+        self.seek(FutureOffset) # It might be enough to just update self.MetaPointer, but this is safer.
+        return data
+            
+
+    def tell(self):
+        return seld.MetaPointer
+
+
 
 
 
