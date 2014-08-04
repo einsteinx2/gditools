@@ -3,6 +3,8 @@
 
 import os
 from iso9660 import ISO9660 as _ISO9660_orig
+from struct import unpack
+from datetime import datetime
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -11,9 +13,8 @@ except ImportError:
 
 # TODO TODO TODO
 #
-#   - Create an 'AppendedFile' class, OffsettedFile and WormHoleFile seem to work well now.
-#      (That'd be used to append an OffsettedFile to a WormHoleFile to dump 5+ tracks GDI)
 #   - Create a class to parse GDI files with methods to extract files and bootsector/sorttxt.
+#   - Add an option to ISO9660.dump_all_files to preserve the datestamp of files on the disc when extracted.
 #
 # TODO TODO TODO
 
@@ -263,6 +264,34 @@ class ISO9660(_ISO9660_orig):
 
 
 
+    def get_time_by_record(self, rec):
+        return datetime.fromtimestamp(self._get_strftime_by_record(rec)).strftime('GMT %Y-%m-%d %H:%M:%S')
+
+
+    def get_time(self, filename):
+        return self.get_time_by_record(self.get_record(filename))
+
+
+    def _get_strftime_by_record(self, rec):
+        date = rec['datetime']
+        t = [unpack('B', i)[0] for i in date]
+        t[0] += 1900
+        t_strftime = self._datetime_to_strftime(t)
+        return t_strftime
+    
+    def _datetime_to_strftime(self, t):
+        epoch = datetime(1970, 1, 1)
+        timez = t.pop(-1) * 15 * 60 # Offset from GMT in 15 min intervals converted to seconds
+        tmp = (datetime(*t)-epoch).total_seconds()
+        return tmp + timez
+
+
+        
+
+
+        
+
+
 class CdImage(file):
     """
     Class that allows opening a 2352 or 2048 bytes/sector data cd track as a 2048 bytes/sector one.
@@ -310,11 +339,6 @@ class CdImage(file):
             file.seek(self, realpointer, 0)
 
     def read(self, length = None):
-        try:
-            from cStringIO import StringIO
-        except ImportError:
-            from StringIO import StringIO
-
         if self.__mode == 2048:
             return file.read(self, length)
 
@@ -518,10 +542,6 @@ class AppendedFiles():
             self._f2_len = self._f2.tell()
             self._f2.seek(0,0)
         else:
-            try:
-                from cStringIO import StringIO
-            except ImportError:
-                from StringIO import StringIO
             self._f2 = StringIO('') # So the rest of the code works for one or 2 files.
 
         self.seek(0,0)
