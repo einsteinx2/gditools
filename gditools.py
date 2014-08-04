@@ -33,25 +33,44 @@ class ISO9660(_ISO9660_orig):
 
     def __init__(self, *args, **kwargs):
         # We obviously override the __init__ to add support for WormHoleFile
-        if kwargs.has_key('offset'):
-            self._offset = kwargs.pop('offset')
-        else:
-            self._offset = 0
+        if not type(args[0]) == type({}):    # *Legacy* support for my first version of WormholeFile supports only 3-tracks gdis.
+            self._legacy = True
+            if kwargs.has_key('offset'):
+                self._offset = kwargs.pop('offset')
+            else:
+                self._offset = 0
 
-        if kwargs.has_key('wormhole'):
-            self._wormhole = kwargs.pop('wormhole')
-        else:
-            self._wormhole = [0, 0, 0]
+            if kwargs.has_key('wormhole'):
+                self._wormhole = kwargs.pop('wormhole')
+            else:
+                self._wormhole = [0, 0, 0]
 
-        _ISO9660_orig.__init__(self, *args, **kwargs)
+            _ISO9660_orig.__init__(self, *args)
+
+        else:
+            self._legacy = False
+            self._dict1 = args[0]
+            self._dict2 = None
+            if len(args) > 1:
+                if type(args[1]) == type({}):
+                    self._dict2 = args[1]
+        
+            _ISO9660_orig.__init__(self, 'url') # Just so url doesn't starts with 'http'
+
 
     
-    ### Overriding this function allows to parse iso files as faked by WormHoleFile
+    ### Overriding this function allows to parse iso files as faked by WormHoleFile or AppendedFiles
     
     def _get_sector_file(self, sector, length):
-        with WormHoleFile(self._url, 'rb', offset =  self._offset, wormhole = self._wormhole) as f:
-            f.seek(sector*2048)
-            self._buff = StringIO(f.read(length))
+        if self._legacy:
+            with WormHoleFile(self._url, offset =  self._offset, wormhole = self._wormhole) as f:
+                f.seek(sector*2048)
+                self._buff = StringIO(f.read(length))
+        else:
+            with AppendedFiles(self._dict1, self._dict2) as f:
+                f.seek(sector*2048)
+                self._buff = StringIO(f.read(length))
+
 
 
     ### Overriding this function in iso9660 because it did not worked for 
@@ -306,7 +325,7 @@ class CdImage(file):
             tmp = 2048 - self.binpointer % 2048    # Amount of bytes left until beginning of next sector
             FutureOffset = self.binpointer + length
             realLength = self.realOffset(FutureOffset) - self.realOffset(self.binpointer)
-            buff = StringIO(file.read(self, realLength)) # This will (hopefully) accelerates readings on HDDs, at the cost of more memory use.
+            buff = StringIO(file.read(self, realLength)) # This will (hopefully) accelerates readings on HDDs at the cost of more memory use.
             data = ''
             while length:
                 piece = min(length, tmp)
@@ -344,7 +363,7 @@ class OffsetedFile(CdImage):
         if (len(args) > 0) and (args[0] not in ['r','rb']):
             raise NotImplementedError('Only read mode is implemented.')
 
-        CdImage.__init__(self, filename)
+        CdImage.__init__(self, filename, **kwargs)
         
         CdImage.seek(self,0,2)
         self.length = CdImage.tell(self)
@@ -476,6 +495,12 @@ class WormHoleFile(OffsetedFile):
 
 
 class AppendedFiles():
+    """
+    Two WormHoleFiles one after another. Takes 1 or 2 dict(s) as arguments; those are passed to WormHoleFiles' init.
+
+    This is aimed at merging the track starting at LBA45000 with the last one to 
+    mimic one big track at LBA0 with the file at the same LBA than the GD-ROM.
+    """
     def __init__(self, wormfile1, wormfile2 =  None, *args, **kwargs):
 
         self._f1 = WormHoleFile(**wormfile1)
@@ -492,6 +517,12 @@ class AppendedFiles():
             self._f2.seek(0,2)
             self._f2_len = self._f2.tell()
             self._f2.seek(0,0)
+        else:
+            try:
+                from cStringIO import StringIO
+            except ImportError:
+                from StringIO import StringIO
+            self._f2 = StringIO('') # So the rest of the code works for one or 2 files.
 
         self.seek(0,0)
 
@@ -530,8 +561,17 @@ class AppendedFiles():
             
 
     def tell(self):
-        return seld.MetaPointer
+        return self.MetaPointer
 
+
+    def __enter__(self):
+        return self
+
+
+    def __exit__(self, type=None, value=None, traceback=None):  # This is required to close files properly when using the with statement.
+        self._f1.__exit__()
+        if self._f2_len:
+            self._f2.__exit__()
 
 
 
