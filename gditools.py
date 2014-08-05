@@ -5,8 +5,6 @@ import os
 from iso9660 import ISO9660 as _ISO9660_orig
 from struct import unpack
 from datetime import datetime
-from time import tzname
-from calendar import timegm
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -16,7 +14,6 @@ except ImportError:
 # TODO TODO TODO
 #
 #   - Create a class to parse GDI files with methods to extract files and bootsector/sorttxt.
-#   - Add an option to ISO9660.dump_all_files to preserve the datestamp of files on the disc when extracted.
 #
 # TODO TODO TODO
 
@@ -228,7 +225,7 @@ class ISO9660(_ISO9660_orig):
             if verbose: print('Dumping bootsector to {filename}'.format(filename = filename))
             f.write(self.get_bootsector())
 
-    def dump_file_by_record(self, rec, target = '.', verbose = False, **kwargs):
+    def dump_file_by_record(self, rec, target = '.', keep_timestamp = True, verbose = False, **kwargs):
         if not target[-1] == '/': target += '/'
         if kwargs.has_key('filename'):
             filename = target + kwargs['filename'].strip('/') # User provided filename overrides records's subfolders & name
@@ -247,6 +244,8 @@ class ISO9660(_ISO9660_orig):
                 if verbose: UpdateLine('Dumping file {source} to {target}    ({loc}, {_len})'.format(source = rec['name'].split('/')[-1],\
                                     target = filename, loc = rec['ex_loc'], _len = rec['ex_len'] ))
                 f.write(self.get_file_by_record(rec))
+            if keep_timestamp:
+                os.utime(filename, (self._get_strftime_by_record(rec),)*2)
 
 
     def dump_file(self, name, **kwargs):
@@ -268,7 +267,7 @@ class ISO9660(_ISO9660_orig):
 
     def get_time_by_record(self, rec):
         tmp = datetime.fromtimestamp(self._get_strftime_by_record(rec))
-        return tmp.strftime('%Y-%m-%d %H:%M:%S ({tz})'.format(tz = tzname[0] + ' ' + tzname[1]))
+        return tmp.strftime('%Y-%m-%d %H:%M:%S (localtime)')
 
 
     def get_time(self, filename):
@@ -284,9 +283,9 @@ class ISO9660(_ISO9660_orig):
         return t_strftime
     
     def _datetime_to_strftime(self, t):
+        epoch = datetime(1970, 1, 1)
         timez = t.pop(-1) * 15 * 60. # Offset from GMT in 15 min intervals converted to seconds, popped from t
-        T = timegm(datetime(*t).utctimetuple())
-
+        T = (datetime(*t)-epoch).total_seconds()
         return T - timez
 
 
