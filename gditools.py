@@ -5,6 +5,7 @@ import os
 from iso9660 import ISO9660 as _ISO9660_orig
 from struct import unpack
 from datetime import datetime
+from time import tzname
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -265,7 +266,8 @@ class ISO9660(_ISO9660_orig):
 
 
     def get_time_by_record(self, rec):
-        return datetime.fromtimestamp(self._get_strftime_by_record(rec)).strftime('GMT %Y-%m-%d %H:%M:%S')
+        tmp = datetime.fromtimestamp(self._get_strftime_by_record(rec))
+        return tmp.strftime('%Y-%m-%d %H:%M:%S ({tz})'.format(tz = tzname[0] + ' ' + tzname[1]))
 
 
     def get_time(self, filename):
