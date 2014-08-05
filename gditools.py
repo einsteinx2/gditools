@@ -6,6 +6,7 @@ from iso9660 import ISO9660 as _ISO9660_orig
 from struct import unpack
 from datetime import datetime
 from time import tzname
+from calendar import timegm
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -276,16 +277,17 @@ class ISO9660(_ISO9660_orig):
 
     def _get_strftime_by_record(self, rec):
         date = rec['datetime']
-        t = [unpack('B', i)[0] for i in date]
+        t = [unpack('<B', i)[0] for i in date[:-1]]
+        t.append(unpack('<b', date[-1])[0])
         t[0] += 1900
         t_strftime = self._datetime_to_strftime(t)
         return t_strftime
     
     def _datetime_to_strftime(self, t):
-        epoch = datetime(1970, 1, 1)
-        timez = t.pop(-1) * 15 * 60 # Offset from GMT in 15 min intervals converted to seconds
-        tmp = (datetime(*t)-epoch).total_seconds()
-        return tmp + timez
+        timez = t.pop(-1) * 15 * 60. # Offset from GMT in 15 min intervals converted to seconds, popped from t
+        T = timegm(datetime(*t).utctimetuple())
+
+        return T - timez
 
 
         
