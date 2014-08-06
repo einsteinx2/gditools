@@ -155,6 +155,16 @@ class ISO9660(_ISO9660_orig):
                 for d in self._tree_nodes_records(c):
                     yield spacer(d)
 
+    def get_pvd(self):
+        return self._pvd
+
+    def get_volume_name(self):
+        return self.get_pvd()['volume_identifier']
+
+    def print_files(self):
+        for i in self.tree():
+            print i
+
 
     def get_bootsector(self, lba = 45000):
         self._get_sector(lba, 16*2048)
