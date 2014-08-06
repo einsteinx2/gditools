@@ -14,6 +14,12 @@ except ImportError:
 # TODO TODO TODO
 #
 #   - Create a class to parse GDI files with methods to extract files and bootsector/sorttxt.
+#       In fact, this method should inherit from ISO9660 and simply change the __init__ in 
+#       order to accept a string representing a .gdi filename. In the init one or two dict
+#       would be created for AppendedFiles purpose then the original gditools.ISO9660 init
+#       would be called with this/those dict(s).
+#
+#   - Write a method in ISO9660 to retrieve the volume label.
 #
 # TODO TODO TODO
 
@@ -32,8 +38,8 @@ class ISO9660(_ISO9660_orig):
     ### Overriding Functions of original class in this section
 
     def __init__(self, *args, **kwargs):
-        # We obviously override the __init__ to add support for WormHoleFile
-        if not type(args[0]) == type({}):    # *Legacy* support for my first version of WormholeFile supports only 3-tracks gdis.
+        # We obviously override the __init__ to add support for WormHoleFile/AppendedFiles
+        if not type(args[0]) == type({}):    # *Legacy* support for a simple WormholeFile, supports only 3-tracks gdis.
             self._legacy = True
             if kwargs.has_key('offset'):
                 self._offset = kwargs.pop('offset')
@@ -245,7 +251,7 @@ class ISO9660(_ISO9660_orig):
                                     target = filename, loc = rec['ex_loc'], _len = rec['ex_len'] ))
                 f.write(self.get_file_by_record(rec))
             if keep_timestamp:
-                os.utime(filename, (self._get_strftime_by_record(rec),)*2)
+                os.utime(filename, (self._get_timestamp_by_record(rec),)*2)
 
 
     def dump_file(self, name, **kwargs):
@@ -266,7 +272,7 @@ class ISO9660(_ISO9660_orig):
 
 
     def get_time_by_record(self, rec):
-        tmp = datetime.fromtimestamp(self._get_strftime_by_record(rec))
+        tmp = datetime.fromtimestamp(self._get_timestamp_by_record(rec))
         return tmp.strftime('%Y-%m-%d %H:%M:%S (localtime)')
 
 
@@ -274,15 +280,15 @@ class ISO9660(_ISO9660_orig):
         return self.get_time_by_record(self.get_record(filename))
 
 
-    def _get_strftime_by_record(self, rec):
+    def _get_timestamp_by_record(self, rec):
         date = rec['datetime']
         t = [unpack('<B', i)[0] for i in date[:-1]]
         t.append(unpack('<b', date[-1])[0])
         t[0] += 1900
-        t_strftime = self._datetime_to_strftime(t)
-        return t_strftime
+        t_timestamp = self._datetime_to_timestamp(t)
+        return t_timestamp
     
-    def _datetime_to_strftime(self, t):
+    def _datetime_to_timestamp(self, t):
         epoch = datetime(1970, 1, 1)
         timez = t.pop(-1) * 15 * 60. # Offset from GMT in 15 min intervals converted to seconds, popped from t
         T = (datetime(*t)-epoch).total_seconds()
@@ -315,7 +321,10 @@ class CdImage(file):
         file.__init__(self, filename, 'rb')
 
         file.seek(self,0,2)
-        self.length = file.tell(self)
+        if self.__mode == 2352:
+            self.length = file.tell(self) * 2048/2352
+        else:
+            self.length = file.tell(self)
         file.seek(self,0,0)
 
         self.seek(0)
