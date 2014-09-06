@@ -48,6 +48,8 @@ class ISO9660(object):
             p['ex_loc'] = self._unpack('<I')
             p['parent'] = self._unpack('<H')
             p['name']   = self._unpack_string(l1)
+            if p['name'] == '\x00':
+                p['name'] = ''
 
             if l1%2 == 1:
                 self._unpack('B')
@@ -75,13 +77,13 @@ class ISO9660(object):
     def _tree_path(self, name, index):
         spacer = lambda s: "%s/%s" % (name, s)
         for i, c in enumerate(self._paths):
-            if c['parent'] == index and c['name'] not in '\x00\x01':
+            if c['parent'] == index and i != 0:
                 yield spacer(c['name'])
                 for d in self._tree_path(spacer(c['name']), i+1):
                     yield d
 
     def _tree_node(self, node):
-        spacer = lambda s: "%s/%s" % (node['name'].lstrip('\x00\x01'), s)
+        spacer = lambda s: "%s/%s" % (node['name'], s)
         for c in list(self._unpack_dir_children(node)):
             yield spacer(c['name'])
             if c['flags'] & 2:
@@ -176,7 +178,7 @@ class ISO9660(object):
         self._pvd['path_table_opt_l_loc']          = self._unpack('<i')
         self._pvd['path_table_m_loc']              = self._unpack('>i')
         self._pvd['path_table_opt_m_loc']          = self._unpack('>i')
-        d, self._root = self._unpack_record()      #root directory record
+        _, self._root = self._unpack_record()      #root directory record
         self._pvd['volume_set_identifer']          = self._unpack_string(128)
         self._pvd['publisher_identifier']          = self._unpack_string(128)
         self._pvd['data_preparer_identifier']      = self._unpack_string(128)
@@ -194,10 +196,11 @@ class ISO9660(object):
     ## Unpack a directory record (a listing of a file or folder)
     ##
 
-    def _unpack_record(self):
+    def _unpack_record(self, read=0):
         l0 = self._unpack('B')
 
-        if l0 == 0: return 1, None
+        if l0 == 0:
+            return read+1, None
 
         l1 = self._unpack('B')
 
@@ -212,6 +215,9 @@ class ISO9660(object):
 
         l2 = self._unpack('B')
         d['name'] = self._unpack_string(l2).split(';')[0]
+        if d['name'] == '\x00':
+            d['name'] = ''
+
         if l2 % 2 == 0:
             self._unpack('B')
 
@@ -221,20 +227,29 @@ class ISO9660(object):
         if e>0:
             extra = self._unpack_raw(e)
 
-        return l0, d
+        return read+l0, d
 
     #Assuming d is a directory record, this generator yields its children
     def _unpack_dir_children(self, d):
+        sector = d['ex_loc']
         read = 0
-        self._get_sector(d['ex_loc'], d['ex_len'])
-        while read < d['ex_len']: #Iterate over files in the directory
-            data, e = self._unpack_record()
-            read += data
+        self._get_sector(sector, 2048)
 
-            if data == 1: #end of directory listing
-                break
-            if e['name'] not in '\x00\x01':
-                yield e
+        read, r_self = self._unpack_record(read)
+        read, r_parent = self._unpack_record(read)
+
+        while read < r_self['ex_len']: #Iterate over files in the directory
+            if read % 2048 == 0:
+                sector += 1
+                self._get_sector(sector, 2048)
+            read, data = self._unpack_record(read)
+
+            if data == None: #end of directory listing
+                to_read = 2048 - (read % 2048)
+                self._unpack_raw(to_read)
+                read += to_read
+            else:
+                yield data
 
     #Search for one child amongst the children
     def _search_dir_children(self, d, term):
@@ -285,8 +300,7 @@ if __name__ == '__main__':
         ret_path = sys.argv[2] if len(sys.argv) > 2 else None
         cd = ISO9660(iso_path)
         if ret_path:
-            print cd.get_file(ret_path)
+            sys.stdout.write(cd.get_file(ret_path))
         else:
             for path in cd.tree():
                 print path
-            #print cd.get_file('md5sum.txt')

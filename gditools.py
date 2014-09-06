@@ -78,42 +78,45 @@ class ISO9660(_ISO9660_orig):
                 self._buff = StringIO(f.read(length))
 
 
-
+    #
+    # After my report, Barney Gale fixed those two issues (get_file and _unpack_dir_children). 
+    # Kept here because it works, in case there's an unforeseen bug in the fix.
+    #
     ### Overriding this function in iso9660 because it did not worked for 
     ### directory record longer than a sector if the elements of the record
     ### were padded not to overlap two sectors.
 
-    def _unpack_dir_children(self, d):
-        #Assuming d is a directory record, this generator yields its children
-        read = 0
-        self._get_sector(d['ex_loc'], d['ex_len'])
-        while read < d['ex_len']: #Iterate over files in the directory
-            data, e = self._unpack_record()
-            read += data
+    #def _unpack_dir_children(self, d):
+    #    #Assuming d is a directory record, this generator yields its children
+    #    read = 0
+    #    self._get_sector(d['ex_loc'], d['ex_len'])
+    #    while read < d['ex_len']: #Iterate over files in the directory
+    #        data, e = self._unpack_record()
+    #        read += data
 
-            if data == 1: #end of directory listing or padding until next sector
-                self._unpack_raw( 2048 - (self._buff.tell() % 2048) )
-                read = self._buff.tell()
-            elif e['name'] not in '\x00\x01':
-                yield e
+    #        if data == 1: #end of directory listing or padding until next sector
+    #            self._unpack_raw( 2048 - (self._buff.tell() % 2048) )
+    #            read = self._buff.tell()
+    #        elif e['name'] not in '\x00\x01':
+    #            yield e
 
 
     ### Overriding this function as _dir_record_by_table was not fully implemented.
     ### It only retured files in its first sector.
 
-    def get_file(self, path):
-        path = path.upper().strip('/').split('/')
-        path, filename = path[:-1], path[-1]
+    #def get_file(self, path):
+    #    path = path.upper().strip('/').split('/')
+    #    path, filename = path[:-1], path[-1]
 
-        if len(path)==0:
-            parent_dir = self._root
-        else:
-            parent_dir = self._dir_record_by_root(path)
+    #    if len(path)==0:
+    #        parent_dir = self._root
+    #    else:
+    #        parent_dir = self._dir_record_by_root(path)
 
-        f = self._search_dir_children(parent_dir, filename)
+    #    f = self._search_dir_children(parent_dir, filename)
 
-        self._get_sector(f['ex_loc'], f['ex_len'])
-        return self._unpack_raw(f['ex_len'])
+    #    self._get_sector(f['ex_loc'], f['ex_len'])
+    #    return self._unpack_raw(f['ex_len'])
 
 
 
