@@ -19,8 +19,6 @@ except ImportError:
 #       would be created for AppendedFiles purpose then the original gditools.ISO9660 init
 #       would be called with this/those dict(s).
 #
-#   - Write a method in ISO9660 to retrieve the volume label.
-#
 # TODO TODO TODO
 
 
