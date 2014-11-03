@@ -648,6 +648,35 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
     if closeOut:
         f2.close()
 
+
+
+def parse_gdi(filename):
+    a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])  # Always the case for track03
+    with open(filename) as f:
+        l = [i.split() for i in f.readlines()]
+    if not int(l[3][1]) == 45000:
+        raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
+
+    nbt = int(l[0][0])
+
+    a['filename'] = l[3][4]
+    a['mode'] = int(l[3][3])
+
+    if nbt > 3:
+        #TODO get a filesize
+        b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
+                offset = 2048*(l[nbt][1] - (45000 + ("Track03 length"/"Track03 mode"))) )
+        #TODO finish that previous line
+        return a,b
+    else:
+        return a
+
+
+
+
+
+
+
         
 
 def bin2iso(src, dest = None, bufsize = 1024*2048, outmode = 'wb', length_override = False):
