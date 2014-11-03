@@ -651,6 +651,7 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
 
 
 def parse_gdi(filename):
+    # TODO SUPPORT GDI WITH BLANK LINES
     a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])  # Always the case for track03
     with open(filename) as f:
         l = [i.split() for i in f.readlines()]
@@ -663,10 +664,8 @@ def parse_gdi(filename):
     a['mode'] = int(l[3][3])
 
     if nbt > 3:
-        #TODO get a filesize
         b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
-                offset = 2048*(l[nbt][1] - (45000 + ("Track03 length"/"Track03 mode"))) )
-        #TODO finish that previous line
+                offset = 2048*(int(l[nbt][1]) - (45000 + (filesize(a['filename'])/int(a['mode'])))) )
         return a,b
     else:
         return a
@@ -674,8 +673,10 @@ def parse_gdi(filename):
 
 
 
-
-
+def filesize(filename):
+    with open(filename) as f:
+        f.seek(0,2)
+        return f.tell()
 
         
 
