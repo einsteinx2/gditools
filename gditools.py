@@ -13,18 +13,17 @@ except ImportError:
 
 # TODO TODO TODO
 #
-#   - Create a class to parse GDI files with methods to extract files and bootsector/sorttxt.
-#       In fact, this method should inherit from ISO9660 and simply change the __init__ in 
-#       order to accept a string representing a .gdi filename. In the init one or two dict
-#       would be created for AppendedFiles purpose then the original gditools.ISO9660 init
-#       would be called with this/those dict(s).
+#   - Support GDI with blank lines
+#   - Clean that code!
+#   - Release it?
 #
 # TODO TODO TODO
 
 
+
 class ISO9660(_ISO9660_orig):
     """
-    Modification to iso9660.py to easily build sorttxt files and dump GDI files. (eventually) 
+    Modification to iso9660.py to easily build sorttxt files and dump GDI files. 
     
     FamilyGuy 2014
     
@@ -36,86 +35,24 @@ class ISO9660(_ISO9660_orig):
     ### Overriding Functions of original class in this section
 
     def __init__(self, *args, **kwargs):
-        # We obviously override the __init__ to add support for WormHoleFile/AppendedFiles
-        if not type(args[0]) == type({}):    # *Legacy* support for a simple WormholeFile, supports only 3-tracks gdis.
-            self._legacy = True
-            if kwargs.has_key('offset'):
-                self._offset = kwargs.pop('offset')
-            else:
-                self._offset = 0
+        # We obviously override the __init__ to add support for our modifications
+        self._dict1 = args[0]
+        self._dict2 = None
+        if len(args) > 1:
+            if type(args[1]) == type({}):
+                self._dict2 = args[1]
 
-            if kwargs.has_key('wormhole'):
-                self._wormhole = kwargs.pop('wormhole')
-            else:
-                self._wormhole = [0, 0, 0]
+        self._gdifile = AppendedFiles(self._dict1, self._dict2)
 
-            _ISO9660_orig.__init__(self, *args)
-
-        else:
-            self._legacy = False
-            self._dict1 = args[0]
-            self._dict2 = None
-            if len(args) > 1:
-                if type(args[1]) == type({}):
-                    self._dict2 = args[1]
-        
-            _ISO9660_orig.__init__(self, 'url') # Just so url doesn't starts with 'http'
+        _ISO9660_orig.__init__(self, 'url') # Just so url doesn't starts with 'http'
 
 
     
     ### Overriding this function allows to parse iso files as faked by WormHoleFile or AppendedFiles
     
     def _get_sector_file(self, sector, length):
-        if self._legacy:
-            with WormHoleFile(self._url, offset =  self._offset, wormhole = self._wormhole) as f:
-                f.seek(sector*2048)
-                self._buff = StringIO(f.read(length))
-        else:
-            with AppendedFiles(self._dict1, self._dict2) as f:
-                f.seek(sector*2048)
-                self._buff = StringIO(f.read(length))
-
-
-    #
-    # After my report, Barney Gale fixed those two issues (get_file and _unpack_dir_children). 
-    # Kept here because it works, in case there's an unforeseen bug in the fix.
-    #
-    ### Overriding this function in iso9660 because it did not worked for 
-    ### directory record longer than a sector if the elements of the record
-    ### were padded not to overlap two sectors.
-
-    #def _unpack_dir_children(self, d):
-    #    #Assuming d is a directory record, this generator yields its children
-    #    read = 0
-    #    self._get_sector(d['ex_loc'], d['ex_len'])
-    #    while read < d['ex_len']: #Iterate over files in the directory
-    #        data, e = self._unpack_record()
-    #        read += data
-
-    #        if data == 1: #end of directory listing or padding until next sector
-    #            self._unpack_raw( 2048 - (self._buff.tell() % 2048) )
-    #            read = self._buff.tell()
-    #        elif e['name'] not in '\x00\x01':
-    #            yield e
-
-
-    ### Overriding this function as _dir_record_by_table was not fully implemented.
-    ### It only retured files in its first sector.
-
-    #def get_file(self, path):
-    #    path = path.upper().strip('/').split('/')
-    #    path, filename = path[:-1], path[-1]
-
-    #    if len(path)==0:
-    #        parent_dir = self._root
-    #    else:
-    #        parent_dir = self._dir_record_by_root(path)
-
-    #    f = self._search_dir_children(parent_dir, filename)
-
-    #    self._get_sector(f['ex_loc'], f['ex_len'])
-    #    return self._unpack_raw(f['ex_len'])
-
+        self._gdifile.seek(sector*2048)
+        self._buff = StringIO(self._gdifile.read(length))
 
 
     ### NEW FUNCTIONS FOLLOW ###
@@ -131,11 +68,6 @@ class ISO9660(_ISO9660_orig):
 
         f = self._search_dir_children(parent_dir, filename)
         return f
-
-    
-    # Not that useful anymore
-    #def get_info(self, path, info):
-    #    return self.get_record(path)[info]
 
 
     def gen_records(self, get_files = True):
@@ -269,7 +201,7 @@ class ISO9660(_ISO9660_orig):
         self.dump_file_by_record(self.get_record(name), **kwargs)
 
 
-    def dump_all_files(self, target, **kwargs): # kwarg *target* is a required argument to avoid filling dev folder with files
+    def dump_all_files(self, target='data', **kwargs): # kwarg *target* is a required argument to avoid filling dev folder with files
         # Listing all files
         file_records = [i for i in self.gen_records()]
         # Sorting according to LBA to avoid too much skipping on HDDs, hopefully ...
@@ -306,10 +238,45 @@ class ISO9660(_ISO9660_orig):
         return T - timez
 
 
-        
+class gdifile(ISO9660): 
+    """
+    Returns a class that represents a gdi dump of a Gigabyte disc (GD-ROM).
+    It should be initiated with a string pointing to a gdi file.
 
+    e.g.
+    gdi = gdifile('disc.gdi')
+    gdi.dump_all_files()
+    """
+    def __init__(self, filename): # Isn't OO programming wonderful?
+        self._filename = filename
+        ISO9660.__init__(self, *self._parse_gdi(filename))
 
-        
+    def _parse_gdi(self, filename):
+        # TODO SUPPORT GDI WITH BLANK LINES
+        a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])  # Always the case for track03
+        with open(filename) as f:
+            l = [i.split() for i in f.readlines()]
+        if not int(l[3][1]) == 45000:
+            raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
+    
+        nbt = int(l[0][0])
+    
+        a['filename'] = l[3][4]
+        a['mode'] = int(l[3][3])
+    
+        if nbt > 3:
+            b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
+                    offset = 2048*(int(l[nbt][1]) - 
+                                (45000 + (self._get_filesize(a['filename'])/int(a['mode'])))) )
+            return a,b
+        else:
+            return a
+    
+    def _get_filesize(self, filename):
+        with open(filename) as f:
+            f.seek(0,2)
+            return f.tell()
+
 
 
 class CdImage(file):
@@ -339,6 +306,7 @@ class CdImage(file):
         file.seek(self,0,0)
 
         self.seek(0)
+        print 'CdImage __init__'
 
     def realOffset(self,a):
         return a/2048*2352 + a%2048 + 16
@@ -650,35 +618,9 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
 
 
 
-def parse_gdi(filename):
-    # TODO SUPPORT GDI WITH BLANK LINES
-    a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])  # Always the case for track03
-    with open(filename) as f:
-        l = [i.split() for i in f.readlines()]
-    if not int(l[3][1]) == 45000:
-        raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
-
-    nbt = int(l[0][0])
-
-    a['filename'] = l[3][4]
-    a['mode'] = int(l[3][3])
-
-    if nbt > 3:
-        b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
-                offset = 2048*(int(l[nbt][1]) - (45000 + (filesize(a['filename'])/int(a['mode'])))) )
-        return a,b
-    else:
-        return a
-
-
-
-
-def filesize(filename):
-    with open(filename) as f:
-        f.seek(0,2)
-        return f.tell()
-
         
+
+
 
 def bin2iso(src, dest = None, bufsize = 1024*2048, outmode = 'wb', length_override = False):
     """
