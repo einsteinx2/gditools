@@ -50,7 +50,9 @@ class ISO9660(_ISO9660_orig):
     
     ### Overriding this function allows to parse iso files as faked by WormHoleFile or AppendedFiles
     
-    def _get_sector_file(self, sector, length):
+    def _get_sector_file(self, sector, length): 
+	# A big performance improvement versus re-opening the file for each 
+	# read as in the original ISO9660 implementation.
         self._gdifile.seek(sector*2048)
         self._buff = StringIO(self._gdifile.read(length))
 
