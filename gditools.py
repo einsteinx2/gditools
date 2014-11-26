@@ -112,7 +112,7 @@ class ISO9660(_ISO9660_orig):
 
 
     def get_sorttxt(self, crit='ex_loc', prefix='data', add_dummy=True, dummyname='0.0'):
-        # TODO: Idea -> Add an option for a list of important files to be at outer part of disc, used for 1st_read.bin 
+        # TODO (non-urgent): Idea -> Add an option for a list of important files to be at outer part of disc, used for 1st_read.bin 
         """
         *crit* (criterion) can be any file record entry, examples: 
 
@@ -145,7 +145,7 @@ class ISO9660(_ISO9660_orig):
         #            nodes.pop(nodes.index(i))
         #        files_info = [[i,self.get_file_loc(i),self.get_file_len(i)] for i in nodes]
         file_records = [i for i in self.gen_records()]
-        for i in [i for i in self.gen_records(get_files = False)]:
+        for i in self.gen_records(get_files = False):
             file_records.pop(file_records.index(i))  # Strips directories
         reverse = crit[0].islower()
         crit = crit.lower()
@@ -308,7 +308,6 @@ class CdImage(file):
         file.seek(self,0,0)
 
         self.seek(0)
-        print 'CdImage __init__'
 
     def realOffset(self,a):
         return a/2048*2352 + a%2048 + 16
