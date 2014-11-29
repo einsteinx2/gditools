@@ -13,8 +13,9 @@ except ImportError:
 
 # TODO TODO TODO
 #
+#   - Write main
 #   - Support GDI with blank lines
-#   - Clean that code!
+#   - Clean that code! (ISO9660 cleaned)
 #   - Release it?
 #
 # TODO TODO TODO
@@ -23,7 +24,7 @@ except ImportError:
 
 class ISO9660(_ISO9660_orig):
     """
-    Modification to iso9660.py to easily build sorttxt files and dump GDI files. 
+    Modification to iso9660.py to easily build sorttxt files and dump GDI files 
     
     FamilyGuy 2014
     
@@ -35,7 +36,7 @@ class ISO9660(_ISO9660_orig):
     ### Overriding Functions of original class in this section
 
     def __init__(self, *args, **kwargs):
-        # We obviously override the __init__ to add support for our modifications
+        # We obviously override the init to add support for our modifications
         self._dict1 = args[0]
         self._dict2 = None
         if len(args) > 1:
@@ -44,14 +45,19 @@ class ISO9660(_ISO9660_orig):
 
         self._gdifile = AppendedFiles(self._dict1, self._dict2)
 
-        _ISO9660_orig.__init__(self, 'url') # Just so url doesn't starts with 'http'
+        _ISO9660_orig.__init__(self, 'url') # So url doesn't starts with http
+
+        if kwargs.has_key('verbose'):
+            self._verbose = kwargs.pop('verbose')
+        else:
+            self._verbose = False
 
 
     
-    ### Overriding this function allows to parse iso files as faked by WormHoleFile or AppendedFiles
+    ### Overriding this function allows to parse AppendedFiles as isos
     
     def _get_sector_file(self, sector, length): 
-	# A big performance improvement versus re-opening the file for each 
+        # A big performance improvement versus re-opening the file for each
 	# read as in the original ISO9660 implementation.
         self._gdifile.seek(sector*2048)
         self._buff = StringIO(self._gdifile.read(length))
@@ -82,8 +88,10 @@ class ISO9660(_ISO9660_orig):
 
 
     def _tree_nodes_records(self, node):
-        spacer = lambda s: dict({j:s[j] for j in [i for i in s if i != 'name']}.items(), \
-                                    name = "%s/%s" % (node['name'].lstrip('\x00\x01'), s['name']))
+        spacer = lambda s: dict(
+                    {j:s[j] for j in [i for i in s if i != 'name']}.items(),
+                    name = "%s/%s" % (node['name'].lstrip('\x00\x01'), 
+                    s['name']))
         for c in list(self._unpack_dir_children(node)):
             yield spacer(c)
             if c['flags'] & 2:
@@ -111,89 +119,115 @@ class ISO9660(_ISO9660_orig):
         return self._unpack_raw(filerec['ex_len'])
 
 
-    def get_sorttxt(self, crit='ex_loc', prefix='data', add_dummy=True, dummyname='0.0'):
-        # TODO (non-urgent): Idea -> Add an option for a list of important files to be at outer part of disc, used for 1st_read.bin 
+    def get_sorttxt(self, crit='ex_loc', prefix='data', dummy='0.0'):
         """
-        *crit* (criterion) can be any file record entry, examples: 
+        prefix : Folder that will be created in the pwd.
+                 Default: 'data'
+
+        dummy : Name of the dummy file to be put in the sorttxt
+                Set to False not to use a dummy file
+                Default: '0.0'
+
+        crit : (criterion) can be any file record entry
+               Default: 'ex_loc'    (LBA)
+
+        If the first letter of crit is uppercase, order is reversed
+
+        e.g.
 
         'ex_loc' or 'EX_LOC'    ->    Sorted by LBA value.
         'name' or 'NAME'        ->    Sorted by file name.
         'ex_len' or 'EX_LEN'    ->    Sorted by file size.
         
-        If the first letter of *criterion* is uppercase, order is reversed.
 
         Note: First file in sorttxt represents the last one on disc.
 
-
         e.g.
 
-        - To get a sorttxt that'd yield the same file order as the source iso:
+        - A sorttxt representing the file order of the source iso:
             self.get_sorted(crit='ex_loc')
 
-        - To get a sorttxt with BIGGEST files at the outer part of disc:
+        - A sorttxt with BIGGEST files at the outer part of disc:
             self.get_sorted(crit='ex_len')
 
-        - To get a sorttxt with SMALLEST files at the outer part of disc:
+        - A sorttxt with SMALLEST files at the outer part of disc:
             self.get_sorted(criterion='EX_LEN')
         """
-        #   *** THAT WAS SO FREAKING SLOW, IT TOOK LIKE, ... MINUTES! ***
-        #          (Keeping it as an example of a false good idea)
-        #
-        #        nodes = [i for i in self.tree()]
-        #        paths = [i for i in self.tree(get_files = False)]
-        #        for i in paths:
-        #            nodes.pop(nodes.index(i))
-        #        files_info = [[i,self.get_file_loc(i),self.get_file_len(i)] for i in nodes]
+        return self._sorttxt_from_records(self._sorted_records(crit=crit),
+                                     prefix=prefix, dummy=dummy)
+
+
+    def _sorted_records(self, crit='ex_loc'):
         file_records = [i for i in self.gen_records()]
         for i in self.gen_records(get_files = False):
             file_records.pop(file_records.index(i))  # Strips directories
         reverse = crit[0].islower()
         crit = crit.lower()
-        ordered_records = sorted(file_records, key=lambda k: k[crit], reverse = reverse)
+        ordered_records = sorted(file_records, key=lambda k: k[crit], 
+                                 reverse = reverse)
+        return ordered_records
 
-        # Building the sorttxt file string
+
+    def _sorttxt_from_records(self, records, prefix='data', dummy='0.0'):
         sorttxt=''
         newline = '{prefix}{filename} {importance}\r\n'
-        for i,f in enumerate(ordered_records):
-            sorttxt = sorttxt + newline.format(prefix=prefix, filename=f['name'], importance = i+1)
-
-        if add_dummy:
-            if not dummyname[0] == '/': 
-                dummyname = '/' + dummyname
-            sorttxt = sorttxt + newline.format(prefix=prefix, filename=dummyname,\
-                    importance=len(file_records)+1)
-
+        for i,f in enumerate(records):
+            sorttxt += newline.format(prefix=prefix, filename=f['name'],
+                                      importance = i+1)
+        if dummy:
+            if not dummy[0] == '/': 
+                dummy = '/' + dummy
+            sorttxt += newline.format(prefix=prefix, filename=dummy,
+                                      importance=len(records)+1)
         return sorttxt
 
 
-    def dump_sorttxt(self, filename='sorttxt.txt', verbose = False, **kwargs):
+    def dump_sorttxt(self, filename='sorttxt.txt', **kwargs):
         with open(filename, 'wb') as f:
-            if verbose: print('Dumping sorttxt to {filename}'.format(filename = filename))
+            if self._verbose: 
+                print('Dumping sorttxt to {}'.format(filename))
             f.write(self.get_sorttxt(**kwargs))
 
-    def dump_bootsector(self, filename='ip.bin', verbose = False):
+    def dump_bootsector(self, filename='ip.bin'):
         with open(filename, 'wb') as f:
-            if verbose: print('Dumping bootsector to {filename}'.format(filename = filename))
+            if self._verbose: 
+                print('Dumping bootsector to {}'.format(filename))
             f.write(self.get_bootsector())
 
-    def dump_file_by_record(self, rec, target = '.', keep_timestamp = True, verbose = False, **kwargs):
+    def dump_file_by_record(self, rec, target = '.', keep_timestamp = True,
+                            filename = None):
+        """
+        rec: Record of a file in the filesystem
+        target: Directory target to dump file into
+        keep_timestamp: Uses timestamp in fs for dumped file
+        filename: *None* -> Uses name in fs, else it overrides filename
+        """
         if not target[-1] == '/': target += '/'
-        if kwargs.has_key('filename'):
-            filename = target + kwargs['filename'].strip('/') # User provided filename overrides records's subfolders & name
-        else: filename = target + rec['name'].strip('/')
+        # User provided filename overrides records's subfolders & name
+        if filename:
+            filename = target + filename.strip('/') 
+        else: 
+            filename = target + rec['name'].strip('/')
 
         if rec['flags'] == 2:
-            filename += '/' # This way os.path.isdirname reports the good value for records representing directories
+            # So os.path.isdirname yields right value for dir records
+            filename += '/' 
         
         path = os.path.dirname(filename)
         if not os.path.exists(path):
-            os.makedirs(path)   # Creates the target directories required by the record; this will create empty directories too
-            if verbose: print('Created directory: {dirname}'.format(dirname = path))
+            # Creates required dirs, including empty ones
+            os.makedirs(path)   
+            if self._verbose: 
+                print('Created directory: {}'.format(path))
 
-        if rec['flags'] != 2:   # Unless the record represents a directory we dump the file to disc.
+        if rec['flags'] != 2:   # If rec doesn't represents a directory
+            message = 'Dumping {} to {}    ({}, {})'
             with open(filename, 'wb') as f:
-                if verbose: UpdateLine('Dumping file {source} to {target}    ({loc}, {_len})'.format(source = rec['name'].split('/')[-1],\
-                                    target = filename, loc = rec['ex_loc'], _len = rec['ex_len'] ))
+                if self._verbose: 
+                    UpdateLine(message.format(rec['name'].split('/')[-1],
+                                              filename, rec['ex_loc'],
+                                              rec['ex_len']))
+
                 f.write(self.get_file_by_record(rec))
             if keep_timestamp:
                 os.utime(filename, (self._get_timestamp_by_record(rec),)*2)
@@ -203,17 +237,19 @@ class ISO9660(_ISO9660_orig):
         self.dump_file_by_record(self.get_record(name), **kwargs)
 
 
-    def dump_all_files(self, target='data', **kwargs): # kwarg *target* is a required argument to avoid filling dev folder with files
-        # Listing all files
-        file_records = [i for i in self.gen_records()]
-        # Sorting according to LBA to avoid too much skipping on HDDs, hopefully ...
-        ordered_records = sorted(file_records, key=lambda k: k['ex_loc'], reverse = False)
-        for i in ordered_records:
-            self.dump_file_by_record(i, target = target, **kwargs) # DUMPING FILE
+    def dump_all_files(self, target='data', **kwargs): 
+        # target has a default value not to accidentally fill dev folder 
+        # Sorting according to LBA to avoid too much skipping on HDDs
+        try:
+            for i in self._sorted_records(crit='ex_loc'):
+                self.dump_file_by_record(i, target = target, **kwargs)
 
-        if kwargs.has_key('verbose'):
-            if kwargs['verbose']: UpdateLine('All files were dumped successfully.')
+            if self._verbose:
+                UpdateLine('All files were dumped successfully.')
 
+        except:
+            if self._verbose:
+                UpdateLine('There was an error dumping all files.')
 
 
     def get_time_by_record(self, rec):
@@ -235,7 +271,8 @@ class ISO9660(_ISO9660_orig):
     
     def _datetime_to_timestamp(self, t):
         epoch = datetime(1970, 1, 1)
-        timez = t.pop(-1) * 15 * 60. # Offset from GMT in 15 min intervals converted to seconds, popped from t
+        timez = t.pop(-1) * 15 * 60. 
+        # timez: Offset from GMT in 15 min intervals converted to secs
         T = (datetime(*t)-epoch).total_seconds()
         return T - timez
 
@@ -249,9 +286,9 @@ class gdifile(ISO9660):
     gdi = gdifile('disc.gdi')
     gdi.dump_all_files()
     """
-    def __init__(self, filename): # Isn't OO programming wonderful?
+    def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
         self._filename = filename
-        ISO9660.__init__(self, *self._parse_gdi(filename))
+        ISO9660.__init__(self, *self._parse_gdi(filename), **kwargs)
 
     def _parse_gdi(self, filename):
         # TODO SUPPORT GDI WITH BLANK LINES
