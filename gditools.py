@@ -277,6 +277,33 @@ class ISO9660(_ISO9660_orig):
         return T - timez
 
 
+def parse_gdi(filename):
+    a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
+    # track03 is always represented by this exact a
+    with open(filename) as f:
+        l = [i.split() for i in f.readlines() if i.split()]
+    if not int(l[3][1]) == 45000:
+        raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
+
+    nbt = int(l[0][0])
+
+    a['filename'] = l[3][4]
+    a['mode'] = int(l[3][3])
+
+    if nbt > 3:
+        b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
+                offset = 2048*(int(l[nbt][1]) - 
+                            (45000 + (self._get_filesize(a['filename'])/int(a['mode'])))) )
+        return a,b
+    else:
+        return a
+
+def get_filesize(filename):
+    with open(filename) as f:
+        f.seek(0,2)
+        return f.tell()
+
+
 class gdifile(ISO9660): 
     """
     Returns a class that represents a gdi dump of a Gigabyte disc (GD-ROM).
@@ -290,31 +317,6 @@ class gdifile(ISO9660):
         self._filename = filename
         ISO9660.__init__(self, *self._parse_gdi(filename), **kwargs)
 
-    def _parse_gdi(self, filename):
-        # TODO SUPPORT GDI WITH BLANK LINES
-        a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])  # Always the case for track03
-        with open(filename) as f:
-            l = [i.split() for i in f.readlines()]
-        if not int(l[3][1]) == 45000:
-            raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
-    
-        nbt = int(l[0][0])
-    
-        a['filename'] = l[3][4]
-        a['mode'] = int(l[3][3])
-    
-        if nbt > 3:
-            b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
-                    offset = 2048*(int(l[nbt][1]) - 
-                                (45000 + (self._get_filesize(a['filename'])/int(a['mode'])))) )
-            return a,b
-        else:
-            return a
-    
-    def _get_filesize(self, filename):
-        with open(filename) as f:
-            f.seek(0,2)
-            return f.tell()
 
 
 
