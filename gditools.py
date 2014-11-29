@@ -183,12 +183,16 @@ class ISO9660(_ISO9660_orig):
 
 
     def dump_sorttxt(self, filename='sorttxt.txt', **kwargs):
+        if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
+            filename = self._dirname + '/' + filename
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping sorttxt to {}'.format(filename))
             f.write(self.get_sorttxt(**kwargs))
 
     def dump_bootsector(self, filename='ip.bin'):
+        if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
+            filename = self._dirname + '/' + filename
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping bootsector to {}'.format(filename))
@@ -218,7 +222,8 @@ class ISO9660(_ISO9660_orig):
             # Creates required dirs, including empty ones
             os.makedirs(path)   
             if self._verbose: 
-                print('Created directory: {}'.format(path))
+                tmp_str = 'Created directory: {}'.format(path)
+                print(tmp_str + ' '*(80-len(tmp_str)))
 
         if rec['flags'] != 2:   # If rec doesn't represents a directory
             message = 'Dumping {} to {}    ({}, {})'
@@ -240,6 +245,9 @@ class ISO9660(_ISO9660_orig):
     def dump_all_files(self, target='data', **kwargs): 
         # target has a default value not to accidentally fill dev folder 
         # Sorting according to LBA to avoid too much skipping on HDDs
+
+        if not target[0] == '/': # Paths rel. to gdi folder unless full paths
+            target = self._dirname + '/' + target
         try:
             for i in self._sorted_records(crit='ex_loc'):
                 self.dump_file_by_record(i, target = target, **kwargs)
@@ -277,26 +285,46 @@ class ISO9660(_ISO9660_orig):
         return T - timez
 
 
-def parse_gdi(filename):
+def parse_gdi(filename, verbose = False):
+    dirname = os.path.dirname(filename)
     a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
-    # track03 is always represented by this exact a
+    # track03 always have these offsets and wormhole
     with open(filename) as f:
         l = [i.split() for i in f.readlines() if i.split()]
     if not int(l[3][1]) == 45000:
-        raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
+        raise AssertionError('Invalid gdi file: track03 LBA should be 45000')
 
     nbt = int(l[0][0])
-
-    a['filename'] = l[3][4]
+    a['filename'] = dirname + '/' + l[3][4]
     a['mode'] = int(l[3][3])
 
     if nbt > 3:
-        b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
-                offset = 2048*(int(l[nbt][1]) - 
-                            (45000 + (self._get_filesize(a['filename'])/int(a['mode'])))) )
-        return a,b
+        b = dict(filename=dirname + '/' + l[nbt][4], mode=int(l[nbt][3]),
+                 offset = 2048*(int(l[nbt][1]) - 
+                     (45000 + (get_filesize(a['filename'])/int(a['mode'])))) )
+        ret = a,b
     else:
-        return a
+        ret = a,
+
+    if verbose:
+        print('\nParsed gdi file: {}'.format(os.path.basename(filename)))
+        print('Base Directory:  {}'.format(dirname))
+        print('Number of tracks:  {}'.format(nbt))
+        for i,j in enumerate(ret):
+            print('')
+            print('{} track:'.format('DATA' if i==1 or len(ret)==1 else 'TOC'))
+            print('\tFilename:  {}'.format(os.path.basename(j['filename'])))
+            print('\tLBA:       {} '.format(l[3][1] if i == 0 else l[nbt][1]))
+            print('\tMode:      {} bytes/sector'.format(j['mode']))
+            print('\tOffset:    {}'.format(j['offset']/2048))
+            if j.has_key('wormhole'):
+                wh = [k/2048 for k in j['wormhole']]
+            else:
+                wh = 'None'
+            print('\tWormHole:  {}'.format(wh))
+    
+    return ret
+
 
 def get_filesize(filename):
     with open(filename) as f:
@@ -314,8 +342,10 @@ class gdifile(ISO9660):
     gdi.dump_all_files()
     """
     def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
-        self._filename = filename
-        ISO9660.__init__(self, *self._parse_gdi(filename), **kwargs)
+        verbose = kwargs['verbose'] if kwargs.has_key('verbose') else False 
+        self._dirname = os.path.dirname(filename)
+        self._gdiname = os.path.basename(filename)
+        ISO9660.__init__(self, *parse_gdi(filename, verbose=verbose), **kwargs)
 
 
 
