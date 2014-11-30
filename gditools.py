@@ -14,8 +14,6 @@ except ImportError:
 # TODO TODO TODO
 #
 #   - Write main
-#   - Support GDI with blank lines
-#   - Clean that code! (ISO9660 cleaned)
 #   - Release it?
 #
 # TODO TODO TODO
@@ -38,6 +36,7 @@ class ISO9660(_ISO9660_orig):
     def __init__(self, *args, **kwargs):
         # We obviously override the init to add support for our modifications
         self._dict1 = args[0]
+        self._dirname = os.path.dirname(self._dict1['filename'])
         self._dict2 = None
         if len(args) > 1:
             if type(args[1]) == type({}):
@@ -183,12 +182,16 @@ class ISO9660(_ISO9660_orig):
 
 
     def dump_sorttxt(self, filename='sorttxt.txt', **kwargs):
+        if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
+            filename = self._dirname + '/' + filename
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping sorttxt to {}'.format(filename))
             f.write(self.get_sorttxt(**kwargs))
 
     def dump_bootsector(self, filename='ip.bin'):
+        if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
+            filename = self._dirname + '/' + filename
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping bootsector to {}'.format(filename))
@@ -218,7 +221,8 @@ class ISO9660(_ISO9660_orig):
             # Creates required dirs, including empty ones
             os.makedirs(path)   
             if self._verbose: 
-                print('Created directory: {}'.format(path))
+                tmp_str = 'Created directory: {}'.format(path)
+                print(tmp_str + ' '*(80-len(tmp_str)))
 
         if rec['flags'] != 2:   # If rec doesn't represents a directory
             message = 'Dumping {} to {}    ({}, {})'
@@ -240,6 +244,9 @@ class ISO9660(_ISO9660_orig):
     def dump_all_files(self, target='data', **kwargs): 
         # target has a default value not to accidentally fill dev folder 
         # Sorting according to LBA to avoid too much skipping on HDDs
+
+        if not target[0] == '/': # Paths rel. to gdi folder unless full paths
+            target = self._dirname + '/' + target
         try:
             for i in self._sorted_records(crit='ex_loc'):
                 self.dump_file_by_record(i, target = target, **kwargs)
@@ -277,26 +284,48 @@ class ISO9660(_ISO9660_orig):
         return T - timez
 
 
-def parse_gdi(filename):
+def parse_gdi(filename, verbose = False):
+    dirname = os.path.dirname(filename)
     a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
-    # track03 is always represented by this exact a
+    # track03 always have these offsets and wormhole
+
     with open(filename) as f:
         l = [i.split() for i in f.readlines() if i.split()]
+                # if i.split() removes blank lines
     if not int(l[3][1]) == 45000:
-        raise AssertionError('gdi file seems unvalid: track03 should start at lba45000')
+        raise AssertionError('Invalid gdi file: track03 LBA should be 45000')
 
     nbt = int(l[0][0])
-
-    a['filename'] = l[3][4]
+    a['filename'] = dirname + '/' + l[3][4]
     a['mode'] = int(l[3][3])
 
     if nbt > 3:
-        b = dict(filename = l[nbt][4], mode = int(l[nbt][3]), \
-                offset = 2048*(int(l[nbt][1]) - 
-                            (45000 + (self._get_filesize(a['filename'])/int(a['mode'])))) )
-        return a,b
+        b = dict(filename=dirname + '/' + l[nbt][4], mode=int(l[nbt][3]),
+                 offset = 2048*(int(l[nbt][1]) - 
+                     (45000 + (get_filesize(a['filename'])/int(a['mode'])))) )
+        ret = a,b
     else:
-        return a
+        ret = a,
+
+    if verbose:
+        print('\nParsed gdi file: {}'.format(os.path.basename(filename)))
+        print('Base Directory:  {}'.format(dirname))
+        print('Number of tracks:  {}'.format(nbt))
+        for i,j in enumerate(ret):
+            print('')
+            print('{} track:'.format('DATA' if i==1 or len(ret)==1 else 'TOC'))
+            print('\tFilename:  {}'.format(os.path.basename(j['filename'])))
+            print('\tLBA:       {} '.format(l[3][1] if i == 0 else l[nbt][1]))
+            print('\tMode:      {} bytes/sector'.format(j['mode']))
+            print('\tOffset:    {}'.format(j['offset']/2048))
+            if j.has_key('wormhole'):
+                wh = [k/2048 for k in j['wormhole']]
+            else:
+                wh = 'None'
+            print('\tWormHole:  {}'.format(wh))
+    
+    return ret
+
 
 def get_filesize(filename):
     with open(filename) as f:
@@ -314,15 +343,16 @@ class gdifile(ISO9660):
     gdi.dump_all_files()
     """
     def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
-        self._filename = filename
-        ISO9660.__init__(self, *self._parse_gdi(filename), **kwargs)
+        verbose = kwargs['verbose'] if kwargs.has_key('verbose') else False 
+        ISO9660.__init__(self, *parse_gdi(filename, verbose=verbose), **kwargs)
 
 
 
 
 class CdImage(file):
     """
-    Class that allows opening a 2352 or 2048 bytes/sector data cd track as a 2048 bytes/sector one.
+    Class that allows opening a 2352 or 2048 bytes/sector data cd track
+    as a 2048 bytes/sector one.
     """
     def __init__(self, filename, mode = 'auto', *args, **kwargs):
 
@@ -377,26 +407,33 @@ class CdImage(file):
             if length == None:
                 length = self.length - self.binpointer
 
-            tmp = 2048 - self.binpointer % 2048    # Amount of bytes left until beginning of next sector
+            # Amount of bytes left until beginning of next sector
+            tmp = 2048 - self.binpointer % 2048    
             FutureOffset = self.binpointer + length
             realLength = self.realOffset(FutureOffset) - self.realOffset(self.binpointer)
-            buff = StringIO(file.read(self, realLength)) # This will (hopefully) accelerates readings on HDDs at the cost of more memory use.
+            # This will (hopefully) accelerates readings on HDDs at the
+            # cost of more memory use.
+            buff = StringIO(file.read(self, realLength)) 
             data = ''
             while length:
                 piece = min(length, tmp)
-                tmp = 2048  # Allows the first piece to be under a sector (if the pointer originally is not at the beginning of a sector)
+                tmp = 2048  # Allows first piece <1 sector if need be
                 data += buff.read(piece)
                 length -= piece
-                # If we're not done reading, it means we reached the end of a sector and we should skip to the beginning of the next one.
+                # If we're not done reading, it means we reached the 
+                # end of a sector and we should skip to the beginning 
+                # of the next one.
                 if not length == 0: 
-                    buff.seek(304,1) # Seeking to beginning of next sector, jumping over EDC/ECC of current and header of next sectors.
-
+                    buff.seek(304,1) 
+                    # Seeking to beginning of next sector, jumping over
+                    # EDC/ECC of current and header of next sectors.
             self.seek(FutureOffset)
             return data
 
     def tell(self):
         if self.__mode == 2048:
-            return file.tell(self) 
+            return file.tell(self)
+
         elif self.__mode == 2352:
             return self.binpointer
 
@@ -406,7 +443,8 @@ class OffsetedFile(CdImage):
     """
     Like a file, but offsetted! Padding is made of 0x00.
 
-    READ ONLY: trying to open a file in write mode will raise a NotImplementedError
+    READ ONLY: trying to open a file in write mode will raise a 
+    NotImplementedError
     """
     def __init__(self, filename, *args, **kwargs):
 
@@ -470,7 +508,10 @@ class OffsetedFile(CdImage):
 
 class WormHoleFile(OffsetedFile):
     """
-    Redirects an offset-range to another offset in a file. Because everbody likes wormholes.
+    Redirects an offset-range to another offset in a file. Because 
+    everbody likes wormholes. 
+
+    I even chose that name before WH were mainsteam (Interstellar)
     """
     def __init__(self, *args, **kwargs):
 
@@ -492,7 +533,8 @@ class WormHoleFile(OffsetedFile):
         tmp = self.pointer
         FutureOffset = self.pointer + length
 
-        # If we start after the wormhole or if we don't reach it, everything is fine
+        # If we start after the wormhole or if we don't reach it, 
+        # everything is fine
         if (tmp >= self.target + self.wormlen) or (FutureOffset < self.target):
             # print 'OUT OF WORMHOLE'
             data = OffsetedFile.read(self, length)
@@ -500,12 +542,13 @@ class WormHoleFile(OffsetedFile):
         # If we start inside the wormhole, it's trickier        
         elif tmp >= self.target:
             # print 'START INSIDE'
-            self.seek(tmp - self.target + self.source)  # Through the wormhole to the source
+            # Through the wormhole to the source
+            self.seek(tmp - self.target + self.source)  
 
             # If we don't exit the wormhole, it's somewhat simple
             if FutureOffset < self.target + self.wormlen: 
                 # print 'DON\'T EXIT IT'
-                data = OffsetedFile.read(self, length)    # Read in the source
+                data = OffsetedFile.read(self, length) # Read in the source
 
             # If we exit the wormhole midway, it's even trickier
             else:   
@@ -517,7 +560,8 @@ class WormHoleFile(OffsetedFile):
                 outWorm = OffsetedFile.read(self, outWorm_len)
                 data = inWorm + outWorm
 
-        # If we start before the wormhole then hop inside, it's also kinda trickier
+        # If we start before the wormhole then hop inside, it's also 
+        # kinda trickier
         elif FutureOffset < self.target + self.wormlen: 
             # print 'START BEFORE, ENTER IT'
             preWorm_len = self.target - tmp
@@ -527,7 +571,8 @@ class WormHoleFile(OffsetedFile):
             inWorm = OffsetedFile.read(self, inWorm_len)
             data = preWorm + inWorm
 
-        # Now if we start before the wormhole and jump over it, it's the trickiest
+        # Now if we start before the wormhole and jump over it, it's 
+        # the trickiest
         elif FutureOffset > self.target + self.wormlen:
             # print 'START BEFORE, END AFTER'
             preWorm_len = self.target - tmp
@@ -543,7 +588,8 @@ class WormHoleFile(OffsetedFile):
             data = preWorm + inWorm + postWorm
         
 
-        # Pretend we're still where we should, in case we went where we shouldn't!
+        # Pretend we're still where we should, in case we went where we
+        # shouldn't have!
         self.seek(FutureOffset)     
         return data
 
@@ -551,10 +597,13 @@ class WormHoleFile(OffsetedFile):
 
 class AppendedFiles():
     """
-    Two WormHoleFiles one after another. Takes 1 or 2 dict(s) as arguments; those are passed to WormHoleFiles' init.
+    Two WormHoleFiles one after another. 
+    Takes 1 or 2 dict(s) as arguments; they're passed to WormHoleFiles'
+    at the init.
 
-    This is aimed at merging the track starting at LBA45000 with the last one to 
-    mimic one big track at LBA0 with the file at the same LBA than the GD-ROM.
+    This is aimed at merging the TOC track starting at LBA45000 with 
+    the last one to mimic one big track at LBA0 with the file at the 
+    same LBA than the GD-ROM.
     """
     def __init__(self, wormfile1, wormfile2 =  None, *args, **kwargs):
 
@@ -564,7 +613,6 @@ class AppendedFiles():
         self._f1_len = self._f1.tell()
         self._f1.seek(0,0)
 
-
         self._f2_len = 0
         if wormfile2:
             self._f2 = WormHoleFile(**wormfile2)
@@ -573,7 +621,8 @@ class AppendedFiles():
             self._f2_len = self._f2.tell()
             self._f2.seek(0,0)
         else:
-            self._f2 = StringIO('') # So the rest of the code works for one or 2 files.
+            # So the rest of the code works for one or 2 files.
+            self._f2 = StringIO('') 
 
         self.seek(0,0)
 
@@ -599,15 +648,16 @@ class AppendedFiles():
             length = self._f1_len + self._f2_len - self.MetaPointer
         tmp = self.MetaPointer
         FutureOffset = self.MetaPointer + length
-        if FutureOffset < self._f1_len: # Reading inside file1
+        if FutureOffset < self._f1_len: # Read inside file1
             data = self._f1.read(length)
-        elif tmp > self._f1_len:        # Reading inside file2
+        elif tmp > self._f1_len:        # Read inside file2
             data = self._f2.read(length)
-        else:                           # Reading the end of file1 and beginnig of file2
+        else:                           # Read end of file1 and start of file2
             data = self._f1.read(self._f1_len - tmp)
             data += self._f2.read(FutureOffset - self._f1_len)
 
-        self.seek(FutureOffset) # It might be enough to just update self.MetaPointer, but this is safer.
+        self.seek(FutureOffset) # It might be enough to just update 
+                                # self.MetaPointer, but this is safer.
         return data
             
 
@@ -619,7 +669,10 @@ class AppendedFiles():
         return self
 
 
-    def __exit__(self, type=None, value=None, traceback=None):  # This is required to close files properly when using the with statement.
+    def __exit__(self, type=None, value=None, traceback=None):  
+        # This is required to close files properly when using the with
+        # statement. Which isn't required by ISO9660 anymore, but could
+        # be useful for other uses so it stays!
         self._f1.__exit__()
         if self._f2_len:
             self._f2.__exit__()
@@ -629,7 +682,8 @@ class AppendedFiles():
 
 def UpdateLine(text):
     """
-    Allows to print successive messages over the last line. Line is force to be 80 chars long to avoid display issues.
+    Allows to print successive messages over the last line. Line is 
+    force to be 80 chars long to avoid display issues.
     """
     import sys
     if len(text) > 80:
@@ -642,6 +696,9 @@ def UpdateLine(text):
 
 
 def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
+    """
+    Copy istream f1 into ostream f2 in bufsize chunks
+    """
     f1.seek(0,2)
     length = f1.tell()
     f1.seek(0,0)
@@ -658,103 +715,99 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
 
 
 
-        
-
-
-
-def bin2iso(src, dest = None, bufsize = 1024*2048, outmode = 'wb', length_override = False):
-    """
-    A VERY stupid bin2iso implementation. Not dumb-proof AT ALL.
-    
-    It basically reads (blindly) a file in 2352 chunks and spits 2048 ones
-    ditching the first 16 and last 288 bytes of each input chunk. It should
-    be enough to provide a parseable iso and extract files/files-infos.
-
-    bufsize is floored to SECTORS, as it'd be stupid/complex to do otherwise.
-
-    bufsize of 1024 sectors was optimized on a SSD. Might be tuned for HDD.
-    Options outmode and length_override are meant to be used by isofix.
-    """
-    # TODO: Cuesheet support to skip audio tracks
-    bufsize=bufsize/2048
-
-    if dest == None:
-        if not src.find('.bin') == -1:
-            dest = src.replace('.bin','.iso')
-        elif not src.find('.BIN') == -1:
-            dest = src.replace('.BIN','.ISO')
-        else:
-            dest = src+'.iso'
-    elif dest.find('.iso') == -1:
-        dest=dest+'.iso'
-
-    with open(src,'rb') as BIN, open(dest,outmode) as ISO:
-        BIN.seek(0,2) 
-        if length_override:
-            length = length_override
-        else:
-            length = BIN.tell()/2352 # Get lenght of bin file, in sectors.
-        BIN.seek(16,0)      # Seeking here skips the 1st 16 bytes of sector 0
-        while length:
-            chunk = min(bufsize,length)
-            length = length-chunk
-            data=''
-            while chunk:
-                data+=BIN.read(2048)
-                BIN.seek(304,1) # Skips 288 last of current and 16 first of next sector.
-                chunk=chunk-1
-            ISO.write(data)
-
-
-def isofix(src, dest=None, LBA=45000, bufsize=1024*2048, source='iso'):
-    """
-    Bin files are converted to iso on the fly in the copy process.
-    """
-    # TODO: AutoDetect .bin via name. Autodetect .bin LBA via header
-    if not source.lower() in ['iso','bin']:
-        return -1
-
-    # This next line is ugly enough not to deserve explanation; it works though.
-    hasExtension=bool(src.find('.iso') + src.find('.ISO') + src.find('.bin') + src.find('.BIN') + 4)
-
-    if dest == None:
-        if (hasExtension):
-            dest = src[:-4]+'_fixed.iso'
-        else:
-            dest = src+'_fixed.iso'
-
-
-    # 1 - Writes bootsector (0-15), PVD (16) and SVD (17) to beginning of fixed iso
-    if source == 'iso':
-        with open(src,'rb') as old, open(dest,'wb') as fix:
-            fix.write(old.read(18*2048))
-    if source == 'bin':
-        bin2iso(src, dest, bufsize=bufsize, length_override=18)
-    
-    # 2 - Appends 0x00 to the file until LBA is reached
-    with open(src,'rb') as old, open(dest,'ab') as fix:
-        # Padding with zeros until LBA to fixed to
-        length = (LBA-18)*2048
-        while length:
-            chunk = min(length,bufsize)
-            length=length-chunk
-            fix.write('\x00'*chunk)
-
-    # 3 - Appends the source iso to the dest iso
-    if source == 'iso':
-        with open(src,'rb') as old, open(dest,'ab') as fix:
-            # Get length of source iso
-            old.seek(0,2)
-            length=old.tell()
-            old.seek(0,0) # Return to beginning ready to be all read
-
-            # Append source iso to end of prepared file
-            while length:
-                chunk = min(length,bufsize)
-                length=length-chunk
-                fix.write(old.read(chunk))
-    if source == 'bin':
-        bin2iso(src, dest, bufsize=bufsize, outmode='ab')
+#def bin2iso(src, dest = None, bufsize = 1024*2048, outmode = 'wb', length_override = False):
+#    """
+#    A VERY stupid bin2iso implementation. Not dumb-proof AT ALL.
+#    
+#    It basically reads (blindly) a file in 2352 chunks and spits 2048 ones
+#    ditching the first 16 and last 288 bytes of each input chunk. It should
+#    be enough to provide a parseable iso and extract files/files-infos.
+#
+#    bufsize is floored to SECTORS, as it'd be stupid/complex to do otherwise.
+#
+#    bufsize of 1024 sectors was optimized on a SSD. Might be tuned for HDD.
+#    Options outmode and length_override are meant to be used by isofix.
+#    """
+#    # TODO: Cuesheet support to skip audio tracks
+#    bufsize=bufsize/2048
+#
+#    if dest == None:
+#        if not src.find('.bin') == -1:
+#            dest = src.replace('.bin','.iso')
+#        elif not src.find('.BIN') == -1:
+#            dest = src.replace('.BIN','.ISO')
+#        else:
+#            dest = src+'.iso'
+#    elif dest.find('.iso') == -1:
+#        dest=dest+'.iso'
+#
+#    with open(src,'rb') as BIN, open(dest,outmode) as ISO:
+#        BIN.seek(0,2) 
+#        if length_override:
+#            length = length_override
+#        else:
+#            length = BIN.tell()/2352 # Get lenght of bin file, in sectors.
+#        BIN.seek(16,0)      # Seeking here skips the 1st 16 bytes of sector 0
+#        while length:
+#            chunk = min(bufsize,length)
+#            length = length-chunk
+#            data=''
+#            while chunk:
+#                data+=BIN.read(2048)
+#                BIN.seek(304,1) # Skips 288 last of current and 16 first of next sector.
+#                chunk=chunk-1
+#            ISO.write(data)
+#
+#
+#def isofix(src, dest=None, LBA=45000, bufsize=1024*2048, source='iso'):
+#    """
+#    Bin files are converted to iso on the fly in the copy process.
+#    """
+#    # TODO: AutoDetect .bin via name. Autodetect .bin LBA via header
+#    if not source.lower() in ['iso','bin']:
+#        return -1
+#
+#    # This next line is ugly enough not to deserve explanation; it works though.
+#    hasExtension=bool(src.find('.iso') + src.find('.ISO') + src.find('.bin') + src.find('.BIN') + 4)
+#
+#    if dest == None:
+#        if (hasExtension):
+#            dest = src[:-4]+'_fixed.iso'
+#        else:
+#            dest = src+'_fixed.iso'
+#
+#
+#    # 1 - Writes bootsector (0-15), PVD (16) and SVD (17) to beginning of fixed iso
+#    if source == 'iso':
+#        with open(src,'rb') as old, open(dest,'wb') as fix:
+#            fix.write(old.read(18*2048))
+#    if source == 'bin':
+#        bin2iso(src, dest, bufsize=bufsize, length_override=18)
+#    
+#    # 2 - Appends 0x00 to the file until LBA is reached
+#    with open(src,'rb') as old, open(dest,'ab') as fix:
+#        # Padding with zeros until LBA to fixed to
+#        length = (LBA-18)*2048
+#        while length:
+#            chunk = min(length,bufsize)
+#            length=length-chunk
+#            fix.write('\x00'*chunk)
+#
+#    # 3 - Appends the source iso to the dest iso
+#    if source == 'iso':
+#        with open(src,'rb') as old, open(dest,'ab') as fix:
+#            # Get length of source iso
+#            old.seek(0,2)
+#            length=old.tell()
+#            old.seek(0,0) # Return to beginning ready to be all read
+#
+#            # Append source iso to end of prepared file
+#            while length:
+#                chunk = min(length,bufsize)
+#                length=length-chunk
+#                fix.write(old.read(chunk))
+#    if source == 'bin':
+#        bin2iso(src, dest, bufsize=bufsize, outmode='ab')
 
 
 
