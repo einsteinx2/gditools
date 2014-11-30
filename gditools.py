@@ -288,10 +288,7 @@ def parse_gdi(filename, verbose = False):
     dirname = os.path.dirname(filename)
     a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
     # track03 always have these offsets and wormhole
-<<<<<<< HEAD
 
-=======
->>>>>>> 5aed9dcbcb9d7dce8b376175c42eab363b3e4629
     with open(filename) as f:
         l = [i.split() for i in f.readlines() if i.split()]
                 # if i.split() removes blank lines
@@ -347,11 +344,6 @@ class gdifile(ISO9660):
     """
     def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
         verbose = kwargs['verbose'] if kwargs.has_key('verbose') else False 
-<<<<<<< HEAD
-=======
-        self._dirname = os.path.dirname(filename)
-        self._gdiname = os.path.basename(filename)
->>>>>>> 5aed9dcbcb9d7dce8b376175c42eab363b3e4629
         ISO9660.__init__(self, *parse_gdi(filename, verbose=verbose), **kwargs)
 
 
