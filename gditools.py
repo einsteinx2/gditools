@@ -335,8 +335,10 @@ def get_filesize(filename):
 
 class gdifile(ISO9660): 
     """
-    Returns a class that represents a gdi dump of a Gigabyte disc (GD-ROM).
+    Returns a class that represents a gdi dump of a GD-ROM.
     It should be initiated with a string pointing to a gdi file.
+
+    Boolean kwarg *verbose* enables printing infos on what's going on.
 
     e.g.
     gdi = gdifile('disc.gdi')
@@ -410,7 +412,8 @@ class CdImage(file):
             # Amount of bytes left until beginning of next sector
             tmp = 2048 - self.binpointer % 2048    
             FutureOffset = self.binpointer + length
-            realLength = self.realOffset(FutureOffset) - self.realOffset(self.binpointer)
+            realLength = self.realOffset(FutureOffset) - \
+                            self.realOffset(self.binpointer)
             # This will (hopefully) accelerates readings on HDDs at the
             # cost of more memory use.
             buff = StringIO(file.read(self, realLength)) 
