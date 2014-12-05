@@ -1,6 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+"""
+    gditools, a python library to extract files, sorttxt.txt and 
+    bootsector (ip.bin) from SEGA Gigabyte Disc (GD-ROM) dumps.
+    
+    FamilyGuy 2014
+        
+    
+    gditools.py and provided examples are licensed under the GNU
+    General Public License (version 3), a copy of which is provided
+    in the licences folder: GNU_GPL_v3.txt
+
+    
+    Original iso9660.py by Barney Gale : github.com/barneygale/iso9660
+    iso9660.py is licensed under a BSD license, a copy of which is 
+    provided in the licences folder: iso9660_licente.txt
+"""
+
 import os
 from iso9660 import ISO9660 as _ISO9660_orig
 from struct import unpack
@@ -22,13 +39,8 @@ except ImportError:
 
 class ISO9660(_ISO9660_orig):
     """
-    Modification to iso9660.py to easily build sorttxt files and dump GDI files 
+    Modification to iso9660.py to easily handle GDI files 
     
-    FamilyGuy 2014
-    
-    Original iso9660.py by Barney Gale : github.com/barneygale/iso9660
-    Some fixes were applied to the original code via method overriding.
-    See the comments in the code for more details.
     """
     
     ### Overriding Functions of original class in this section
@@ -284,56 +296,8 @@ class ISO9660(_ISO9660_orig):
         return T - timez
 
 
-def parse_gdi(filename, verbose = False):
-    dirname = os.path.dirname(filename)
-    a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
-    # track03 always have these offsets and wormhole
 
-    with open(filename) as f:
-        l = [i.split() for i in f.readlines() if i.split()]
-                # if i.split() removes blank lines
-    if not int(l[3][1]) == 45000:
-        raise AssertionError('Invalid gdi file: track03 LBA should be 45000')
-
-    nbt = int(l[0][0])
-    a['filename'] = dirname + '/' + l[3][4]
-    a['mode'] = int(l[3][3])
-
-    if nbt > 3:
-        b = dict(filename=dirname + '/' + l[nbt][4], mode=int(l[nbt][3]),
-                 offset = 2048*(int(l[nbt][1]) - 
-                     (45000 + (get_filesize(a['filename'])/int(a['mode'])))) )
-        ret = a,b
-    else:
-        ret = a,
-
-    if verbose:
-        print('\nParsed gdi file: {}'.format(os.path.basename(filename)))
-        print('Base Directory:  {}'.format(dirname))
-        print('Number of tracks:  {}'.format(nbt))
-        for i,j in enumerate(ret):
-            print('')
-            print('{} track:'.format('DATA' if i==1 or len(ret)==1 else 'TOC'))
-            print('\tFilename:  {}'.format(os.path.basename(j['filename'])))
-            print('\tLBA:       {} '.format(l[3][1] if i == 0 else l[nbt][1]))
-            print('\tMode:      {} bytes/sector'.format(j['mode']))
-            print('\tOffset:    {}'.format(j['offset']/2048))
-            if j.has_key('wormhole'):
-                wh = [k/2048 for k in j['wormhole']]
-            else:
-                wh = 'None'
-            print('\tWormHole:  {}'.format(wh))
-    
-    return ret
-
-
-def get_filesize(filename):
-    with open(filename) as f:
-        f.seek(0,2)
-        return f.tell()
-
-
-class gdifile(ISO9660): 
+class GDIfile(ISO9660): 
     """
     Returns a class that represents a gdi dump of a GD-ROM.
     It should be initiated with a string pointing to a gdi file.
@@ -605,7 +569,7 @@ class AppendedFiles():
     at the init.
 
     This is aimed at merging the TOC track starting at LBA45000 with 
-    the last one to mimic one big track at LBA0 with the file at the 
+    the last one to mimic one big track at LBA0 with the files at the 
     same LBA than the GD-ROM.
     """
     def __init__(self, wormfile1, wormfile2 =  None, *args, **kwargs):
@@ -682,6 +646,53 @@ class AppendedFiles():
 
 
 
+def parse_gdi(filename, verbose = False):
+    dirname = os.path.dirname(filename)
+    a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
+    # track03 always have these offsets and wormhole
+
+    with open(filename) as f: # if i.split() removes blank lines
+        l = [i.split() for i in f.readlines() if i.split()]
+    if not int(l[3][1]) == 45000:
+        raise AssertionError('Invalid gdi file: track03 LBA should be 45000')
+
+    nbt = int(l[0][0])
+    a['filename'] = dirname + '/' + l[3][4]
+    a['mode'] = int(l[3][3])
+
+    if nbt > 3:
+        b = dict(filename=dirname + '/' + l[nbt][4], mode=int(l[nbt][3]),
+                 offset = 2048*(int(l[nbt][1]) - 
+                     (45000 + (get_filesize(a['filename'])/int(a['mode'])))) )
+        ret = a,b
+    else:
+        ret = a,
+
+    if verbose:
+        print('\nParsed gdi file: {}'.format(os.path.basename(filename)))
+        print('Base Directory:  {}'.format(dirname))
+        print('Number of tracks:  {}'.format(nbt))
+        for i,j in enumerate(ret):
+            print('')
+            print('{} track:'.format('DATA' if i==1 or len(ret)==1 else 'TOC'))
+            print('\tFilename:  {}'.format(os.path.basename(j['filename'])))
+            print('\tLBA:       {} '.format(l[3][1] if i == 0 else l[nbt][1]))
+            print('\tMode:      {} bytes/sector'.format(j['mode']))
+            print('\tOffset:    {}'.format(j['offset']/2048))
+            if j.has_key('wormhole'):
+                wh = [k/2048 for k in j['wormhole']]
+            else:
+                wh = 'None'
+            print('\tWormHole:  {}'.format(wh))
+    
+    return ret
+
+
+def get_filesize(filename):
+    with open(filename) as f:
+        f.seek(0,2)
+        return f.tell()
+
 
 def UpdateLine(text):
     """
@@ -715,6 +726,7 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
 
     if closeOut:
         f2.close()
+
 
 
 
