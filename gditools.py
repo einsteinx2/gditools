@@ -252,6 +252,8 @@ class ISO9660(_ISO9660_orig):
 
     def dump_file(self, name, **kwargs):
         self.dump_file_by_record(self.get_record(name), **kwargs)
+        if self._verbose:
+            UpdateLine('\n')
 
 
     def dump_all_files(self, target='data', **kwargs): 
@@ -266,6 +268,7 @@ class ISO9660(_ISO9660_orig):
 
             if self._verbose:
                 UpdateLine('All files were dumped successfully.')
+                UpdateLine('\n')
 
         except:
             if self._verbose:
@@ -691,7 +694,7 @@ def parse_gdi(filename, verbose = False):
                 wh = [k/2048 for k in j['wormhole']]
             else:
                 wh = 'None'
-            print('\tWormHole:  {}'.format(wh))
+            print('\tWormHole:  {}\n'.format(wh))
     
     return ret
 
@@ -736,9 +739,24 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
         f2.close()
 
 
-def _printUsage():
-    print 'TEST'
-
+def _printUsage(pname='TET.py'):
+    print('Usage: {} -i input_gdi [options]\n'.format(pname))
+    print('  -h, --help             Display this help')
+    print('  -l, --list             List all files in the filesystem and exit')
+    print('  -o [outdir]            Output directory. Default: gdi folder')
+    print('  -s [filename]          Create a sorttxt file with custom name')
+    print('                           (It uses *data-folder* as prefix)')
+    print('  -b [ipname]            Dump the ip.bin with custom name')
+    print('  -e [filename]          Dump a single file from the filesystem')
+    print('  --data-folder [name]   *data-folder* subfolder. Default: data')
+    print('  --extract-all          Dumps all files in the *data-folder*')
+    print('  --silent               Minimal verbosity mode')
+    print('\n')
+    print('gditools.py by FamilyGuy, http://sourceforge.net/p/dcisotools/')
+    print('    Licensed under GPLv3, see licences folder.')
+    print('')
+    print('iso9660.py  by Barney Gale, http://github.com/barneygale')
+    print('    Licensed under a BSD-based license, see licences folder.')
 
 
 def main(argv):
@@ -748,27 +766,35 @@ def main(argv):
     bootsectorfile = ''
     extract = ''
     silent = False
+    datafolder = 'data'
+    listFiles = False
     try:
-        opts, args = getopt.getopt(argv,"hi:o:s:b:e:",
-                                   ['help','silent','extract-all'])
+        opts, args = getopt.getopt(argv,"hli:o:s:b:e:",
+                                   ['help','silent', 'list',
+                                    'extract-all','data-folder='])
     except getopt.GetoptError:
-        _printUsage()
+        _printUsage(argv[0])
         sys.exit(2)
 
     options = [o[0] for o in opts]
 
     if not '-i' in options:
-        _printUsage()
+        _printUsage(argv[0])
         sys.exit()
 
     if '-h' in options:
-        _printUsage()
+        _printUsage(argv[0])
         sys.exit()
 
     if '--help' in options:
-        _printUsage()
+        _printUsage(argv[0])
         sys.exit()
 
+    if '-l' in options:
+        listFiles = True
+
+    if '--list' in options:
+        listFiles = True
 
     for opt, arg in opts:
         if opt == '-i':
@@ -784,33 +810,49 @@ def main(argv):
         elif opt == '-e':
             extract = arg
         elif opt == '--extract-all':
-            extract = 'all'
+            extract = '__all__'
+        elif opt == '--data-folder':
+            datafolder = arg
 
     
     with GDIfile(inputfile, verbose = not silent) as gdi:
+        if listFiles:
+            print('Listing all files in the filesystem:\n')
+            gdi.print_files()
+            sys.exit()
          
         if outputpath:
+            if outputpath[-1] == '/':
+                outputpath = outputpath[:-1]
+
             if outputpath[0] == '/':
                 gdi._dirname = outputpath
             else:
-                gdi._dirname = os.getcdw() + '/' + outputpath
+                gdi._dirname = os.getcwd() + '/' + outputpath
+
+            if not os.path.exists(gdi._dirname):
+                os.makedirs(gdi._dirname)   
+                if not silent: 
+                    tmp_str = 'Created directory: {}'.format(gdi._dirname)
+                    print(tmp_str + ' '*(80-len(tmp_str)))
 
         if sorttxtfile:
-            gdi.dump_sorttxt(filename=sorttxtfile)
+            gdi.dump_sorttxt(filename=sorttxtfile, prefix=datafolder)
 
         if bootsectorfile:
             gdi.dump_bootsector(filename=bootsectorfile)
 
         if extract:
-            if extract.lower() in ['all','*']:
-                gdi.dump_all_files()
+            if extract.lower() in ['__all__']:
+                if not silent: print('\nDumping all files:')
+                gdi.dump_all_files(target=datafolder)
             else:
-                gdi.dump_file(extract)
+                gdi.dump_file(extract, target=gdi._dirname)
 
         
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        main(sys.argv[1:])
+        main(sys.argv)
     else:
-        _printUsage()
+        _printUsage(sys.argv[0])
 
