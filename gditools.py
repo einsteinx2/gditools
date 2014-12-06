@@ -18,7 +18,7 @@
     provided in the licences folder: iso9660_licente.txt
 """
 
-import os
+import os, sys, getopt
 from iso9660 import ISO9660 as _ISO9660_orig
 from struct import unpack
 from datetime import datetime
@@ -30,7 +30,8 @@ except ImportError:
 
 # TODO TODO TODO
 #
-#   - Write main
+#   - Test main
+#   - Write _printUsage
 #   - Release it?
 #
 # TODO TODO TODO
@@ -311,6 +312,13 @@ class GDIfile(ISO9660):
     def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
         verbose = kwargs['verbose'] if kwargs.has_key('verbose') else False 
         ISO9660.__init__(self, *parse_gdi(filename, verbose=verbose), **kwargs)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type=None, value=None, traceback=None):
+        self._gdifile.__exit__()
+        
 
 
 
@@ -728,105 +736,81 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
         f2.close()
 
 
-
-
-#def bin2iso(src, dest = None, bufsize = 1024*2048, outmode = 'wb', length_override = False):
-#    """
-#    A VERY stupid bin2iso implementation. Not dumb-proof AT ALL.
-#    
-#    It basically reads (blindly) a file in 2352 chunks and spits 2048 ones
-#    ditching the first 16 and last 288 bytes of each input chunk. It should
-#    be enough to provide a parseable iso and extract files/files-infos.
-#
-#    bufsize is floored to SECTORS, as it'd be stupid/complex to do otherwise.
-#
-#    bufsize of 1024 sectors was optimized on a SSD. Might be tuned for HDD.
-#    Options outmode and length_override are meant to be used by isofix.
-#    """
-#    # TODO: Cuesheet support to skip audio tracks
-#    bufsize=bufsize/2048
-#
-#    if dest == None:
-#        if not src.find('.bin') == -1:
-#            dest = src.replace('.bin','.iso')
-#        elif not src.find('.BIN') == -1:
-#            dest = src.replace('.BIN','.ISO')
-#        else:
-#            dest = src+'.iso'
-#    elif dest.find('.iso') == -1:
-#        dest=dest+'.iso'
-#
-#    with open(src,'rb') as BIN, open(dest,outmode) as ISO:
-#        BIN.seek(0,2) 
-#        if length_override:
-#            length = length_override
-#        else:
-#            length = BIN.tell()/2352 # Get lenght of bin file, in sectors.
-#        BIN.seek(16,0)      # Seeking here skips the 1st 16 bytes of sector 0
-#        while length:
-#            chunk = min(bufsize,length)
-#            length = length-chunk
-#            data=''
-#            while chunk:
-#                data+=BIN.read(2048)
-#                BIN.seek(304,1) # Skips 288 last of current and 16 first of next sector.
-#                chunk=chunk-1
-#            ISO.write(data)
-#
-#
-#def isofix(src, dest=None, LBA=45000, bufsize=1024*2048, source='iso'):
-#    """
-#    Bin files are converted to iso on the fly in the copy process.
-#    """
-#    # TODO: AutoDetect .bin via name. Autodetect .bin LBA via header
-#    if not source.lower() in ['iso','bin']:
-#        return -1
-#
-#    # This next line is ugly enough not to deserve explanation; it works though.
-#    hasExtension=bool(src.find('.iso') + src.find('.ISO') + src.find('.bin') + src.find('.BIN') + 4)
-#
-#    if dest == None:
-#        if (hasExtension):
-#            dest = src[:-4]+'_fixed.iso'
-#        else:
-#            dest = src+'_fixed.iso'
-#
-#
-#    # 1 - Writes bootsector (0-15), PVD (16) and SVD (17) to beginning of fixed iso
-#    if source == 'iso':
-#        with open(src,'rb') as old, open(dest,'wb') as fix:
-#            fix.write(old.read(18*2048))
-#    if source == 'bin':
-#        bin2iso(src, dest, bufsize=bufsize, length_override=18)
-#    
-#    # 2 - Appends 0x00 to the file until LBA is reached
-#    with open(src,'rb') as old, open(dest,'ab') as fix:
-#        # Padding with zeros until LBA to fixed to
-#        length = (LBA-18)*2048
-#        while length:
-#            chunk = min(length,bufsize)
-#            length=length-chunk
-#            fix.write('\x00'*chunk)
-#
-#    # 3 - Appends the source iso to the dest iso
-#    if source == 'iso':
-#        with open(src,'rb') as old, open(dest,'ab') as fix:
-#            # Get length of source iso
-#            old.seek(0,2)
-#            length=old.tell()
-#            old.seek(0,0) # Return to beginning ready to be all read
-#
-#            # Append source iso to end of prepared file
-#            while length:
-#                chunk = min(length,bufsize)
-#                length=length-chunk
-#                fix.write(old.read(chunk))
-#    if source == 'bin':
-#        bin2iso(src, dest, bufsize=bufsize, outmode='ab')
+def _printUsage():
+    print 'TEST'
 
 
 
+def main(argv):
+    inputfile = ''
+    outputpath = ''
+    sorttxtfile = ''
+    bootsectorfile = ''
+    extract = ''
+    silent = False
+    try:
+        opts, args = getopt.getopt(argv,"hi:o:s:b:e:",
+                                   ['help','silent','extract-all'])
+    except getopt.GetoptError:
+        _printUsage()
+        sys.exit(2)
+
+    options = [o[0] for o in opts]
+
+    if not '-i' in options:
+        _printUsage()
+        sys.exit()
+
+    if '-h' in options:
+        _printUsage()
+        sys.exit()
+
+    if '--help' in options:
+        _printUsage()
+        sys.exit()
 
 
+    for opt, arg in opts:
+        if opt == '-i':
+            inputfile = arg
+        elif opt == '-o':
+            outputpath = arg
+        elif opt == '-s':
+            sorttxtfile = arg
+        elif opt == '-b':
+            bootsectorfile = arg
+        elif opt == '--silent':
+            silent = True
+        elif opt == '-e':
+            extract = arg
+        elif opt == '--extract-all':
+            extract = 'all'
 
+    
+    with GDIfile(inputfile, verbose = not silent) as gdi:
+         
+        if outputpath:
+            if outputpath[0] == '/':
+                gdi._dirname = outputpath
+            else:
+                gdi._dirname = os.getcdw() + '/' + outputpath
+
+        if sorttxtfile:
+            gdi.dump_sorttxt(filename=sorttxtfile)
+
+        if bootsectorfile:
+            gdi.dump_bootsector(filename=bootsectorfile)
+
+        if extract:
+            if extract.lower() in ['all','*']:
+                gdi.dump_all_files()
+            else:
+                gdi.dump_file(extract)
+
+        
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        main(sys.argv[1:])
+    else:
+        _printUsage()
 
