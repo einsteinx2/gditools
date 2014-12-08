@@ -778,7 +778,7 @@ def main(argv):
                                     'extract-all','data-folder='])
 
     except getopt.GetoptError:
-        _printUsage(argv[0])
+        _printUsage(progname)
         sys.exit(2)
 
     options = [o[0] for o in opts]
