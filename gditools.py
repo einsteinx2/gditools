@@ -748,7 +748,7 @@ def _printUsage(pname='gditools.py'):
     print('  -e [filename]          Dump a single file from the filesystem')
     print('  --extract-all          Dump all the files in the *data-folder*')
     print('  --data-folder [name]   *data-folder* subfolder. Default: data')
-    print(' '*27 + '(__volume_label__ --> Uses ISO9660 volume label)')
+    print(' '*27 + '(__volume_label__ --> Use ISO9660 volume label)')
     print('  --silent               Minimal verbosity mode')
     print('  [no option]            Display gdi infos if not silent')
     print('\n')
