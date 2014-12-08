@@ -111,7 +111,7 @@ class ISO9660(_ISO9660_orig):
     def get_pvd(self):
         return self._pvd
 
-    def get_volume_name(self):
+    def get_volume_label(self):
         return self.get_pvd()['volume_identifier']
 
     def print_files(self):
@@ -746,8 +746,9 @@ def _printUsage(pname='gditools.py'):
     print('                           (It uses *data-folder* as prefix)')
     print('  -b [ipname]            Dump the ip.bin with custom name')
     print('  -e [filename]          Dump a single file from the filesystem')
-    print('  --data-folder [name]   *data-folder* subfolder. Default: data')
     print('  --extract-all          Dump all the files in the *data-folder*')
+    print('  --data-folder [name]   *data-folder* subfolder. Default: data')
+    print(' '*27 + '(__volume_label__ --> Uses ISO9660 volume label)')
     print('  --silent               Minimal verbosity mode')
     print('  [no option]            Display gdi infos if not silent')
     print('\n')
@@ -838,6 +839,9 @@ def main(argv):
                 if not silent: 
                     tmp_str = 'Created directory: {}'.format(gdi._dirname)
                     print(tmp_str + ' '*(80-len(tmp_str)))
+        
+        if datafolder == '__volume_label__':
+            datafolder = gdi.get_volume_label()
 
         if sorttxtfile:
             gdi.dump_sorttxt(filename=sorttxtfile, prefix=datafolder)
