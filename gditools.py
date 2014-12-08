@@ -30,8 +30,6 @@ except ImportError:
 
 # TODO TODO TODO
 #
-#   - Test main
-#   - Write _printUsage
 #   - Release it?
 #
 # TODO TODO TODO
@@ -739,7 +737,7 @@ def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
         f2.close()
 
 
-def _printUsage(pname='TET.py'):
+def _printUsage(pname='gditools.py'):
     print('Usage: {} -i input_gdi [options]\n'.format(pname))
     print('  -h, --help             Display this help')
     print('  -l, --list             List all files in the filesystem and exit')
@@ -784,15 +782,15 @@ def main(argv):
     options = [o[0] for o in opts]
 
     if not '-i' in options:
-        _printUsage(argv[0])
+        _printUsage(progname)
         sys.exit()
 
     if '-h' in options:
-        _printUsage(argv[0])
+        _printUsage(progname)
         sys.exit()
 
     if '--help' in options:
-        _printUsage(argv[0])
+        _printUsage(progname)
         sys.exit()
 
     if '-l' in options:
