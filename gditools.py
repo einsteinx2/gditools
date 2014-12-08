@@ -749,8 +749,9 @@ def _printUsage(pname='TET.py'):
     print('  -b [ipname]            Dump the ip.bin with custom name')
     print('  -e [filename]          Dump a single file from the filesystem')
     print('  --data-folder [name]   *data-folder* subfolder. Default: data')
-    print('  --extract-all          Dumps all files in the *data-folder*')
+    print('  --extract-all          Dump all the files in the *data-folder*')
     print('  --silent               Minimal verbosity mode')
+    print('  [no option]            Display gdi infos if not silent')
     print('\n')
     print('gditools.py by FamilyGuy, http://sourceforge.net/p/dcisotools/')
     print('    Licensed under GPLv3, see licences folder.')
@@ -760,6 +761,9 @@ def _printUsage(pname='TET.py'):
 
 
 def main(argv):
+    progname = argv[0]
+    argv=argv[1:]
+
     inputfile = ''
     outputpath = ''
     sorttxtfile = ''
@@ -772,6 +776,7 @@ def main(argv):
         opts, args = getopt.getopt(argv,"hli:o:s:b:e:",
                                    ['help','silent', 'list',
                                     'extract-all','data-folder='])
+
     except getopt.GetoptError:
         _printUsage(argv[0])
         sys.exit(2)
