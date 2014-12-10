@@ -361,9 +361,6 @@ class CdImage(file):
             file.seek(self, a, b)
 
         elif self.__mode == 2352:
-            if not a in [0, 1, 2]:
-                raise TypeError('First argument must be 0, 1 or 2')
-
             if b == 0:
                 self.binpointer = a
             if b == 1:
