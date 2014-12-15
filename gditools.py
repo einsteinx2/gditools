@@ -387,19 +387,17 @@ class CdImage(file):
             # This will (hopefully) accelerates readings on HDDs at the
             # cost of more memory use.
             buff = StringIO(file.read(self, realLength)) 
-            data = ''
-            while length:
-                piece = min(length, tmp)
-                tmp = 2048  # Allows first piece <1 sector if need be
-                data += buff.read(piece)
-                length -= piece
-                # If we're not done reading, it means we reached the 
-                # end of a sector and we should skip to the beginning 
-                # of the next one.
-                if not length == 0: 
-                    buff.seek(304,1) 
-                    # Seeking to beginning of next sector, jumping over
-                    # EDC/ECC of current and header of next sectors.
+            # The first read can be < 2048 bytes
+            data = buff.read(tmp)
+            length -= tmp
+            buff.seek(304, 1)
+            # The middle reads are all 2048 so we optimize here!
+            for i in xrange(length / 2048):
+                data += buff.read(2048)
+                buff.seek(304, 1)
+            # The last read can be < 2048 bytes
+            data += buff.read(length % 2048)
+            # Seek back to where we should be
             self.seek(FutureOffset)
             return data
 
