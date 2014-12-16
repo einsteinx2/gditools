@@ -651,6 +651,7 @@ class AppendedFiles():
 
 
 def parse_gdi(filename, verbose = False):
+    filename = os.path.realpath(filename)
     dirname = os.path.dirname(filename)
     a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 16*2048])
     # track03 always have these offsets and wormhole
