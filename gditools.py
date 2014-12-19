@@ -116,7 +116,7 @@ class ISO9660(_ISO9660_orig):
 
     def print_files(self):
         for i in self.tree():
-            print i
+            print(i)
 
 
     def get_bootsector(self, lba = 45000):
@@ -125,8 +125,8 @@ class ISO9660(_ISO9660_orig):
 
 
     def get_file_by_record(self, filerec):
-        self._get_sector(filerec['ex_loc'], filerec['ex_len'])
-        return self._unpack_raw(filerec['ex_len'])
+        self._gdifile.seek(filerec['ex_loc']*2048)
+        return self._gdifile.read(filerec['ex_len'])
 
 
     def get_sorttxt(self, crit='ex_loc', prefix='data', dummy='0.0'):
@@ -237,13 +237,17 @@ class ISO9660(_ISO9660_orig):
 
         if rec['flags'] != 2:   # If rec doesn't represents a directory
             message = 'Dumping {} to {}    ({}, {})'
+            if self._verbose: 
+                UpdateLine(message.format(rec['name'].split('/')[-1],
+                                          filename, rec['ex_loc'],
+                                          rec['ex_len']))
             with open(filename, 'wb') as f:
-                if self._verbose: 
-                    UpdateLine(message.format(rec['name'].split('/')[-1],
-                                              filename, rec['ex_loc'],
-                                              rec['ex_len']))
+                # Using buffered copy to speed up things, hopefully
+                # Potentially beneficial on Windows mainly
+                self._gdifile.seek(rec['ex_loc']*2048)
+                _copy_buffered(self._gdifile, f, length = rec['ex_len'],
+                               closeOut = False)
 
-                f.write(self.get_file_by_record(rec))
             if keep_timestamp:
                 os.utime(filename, (self._get_timestamp_by_record(rec),)*2)
 
@@ -715,20 +719,26 @@ def UpdateLine(text):
     sys.stdout.flush()
 
 
-def _copy_buffered(f1, f2, bufsize = 1*1024*1024, closeOut = True):
+def _copy_buffered(f1, f2, length = False, bufsize = 1*1024*1024, closeOut = True):
     """
     Copy istream f1 into ostream f2 in bufsize chunks
     """
-    f1.seek(0,2)
-    length = f1.tell()
-    f1.seek(0,0)
+    if not length:  # By default it read all the file
+        tmp = f1.tell()
+        f1.seek(0,2)
+        length = f1.tell()
+        f1.seek(tmp,0)
     f2.seek(0,0)
 
-    while length:
-        chunk = min(length, bufsize)
-        length = length - chunk
-        data = f1.read(chunk)
-        f2.write(data)
+    for i in xrange(length/bufsize):
+        f2.write(f1.read(bufsize))
+    f2.write(f1.read(length % bufsize))
+
+    #while length:
+    #    chunk = min(length, bufsize)
+    #    length = length - chunk
+    #    data = f1.read(chunk)
+    #    f2.write(data)
 
     if closeOut:
         f2.close()
