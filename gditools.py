@@ -30,7 +30,7 @@ except ImportError:
 
 # TODO TODO TODO
 #
-#   - Release it?
+#   - Test extensively, find bugs and fix them?
 #
 # TODO TODO TODO
 
@@ -245,8 +245,7 @@ class ISO9660(_ISO9660_orig):
                 # Using buffered copy to speed up things, hopefully
                 # Potentially beneficial on Windows mainly
                 self._gdifile.seek(rec['ex_loc']*2048)
-                _copy_buffered(self._gdifile, f, length = rec['ex_len'],
-                               closeOut = False)
+                _copy_buffered(self._gdifile, f, length = rec['ex_len'])
 
             if keep_timestamp:
                 os.utime(filename, (self._get_timestamp_by_record(rec),)*2)
