@@ -21,10 +21,10 @@ sys.path.append('.')
 from gditools import GDIfile, _copy_buffered
 
 
-def gdifix(ifile, ofile='{dirname}fixed.iso'):
+def gdifix(ifile, ofile='{dirname}/fixed.iso'):
     gdifile = GDIfile(ifile, verbose = True)._gdifile
     gdifile.seek(0,0)
-    ofile = ofile.format(dirname = os.path.dirname(ifile) + '/')
+    ofile = ofile.format(dirname = os.path.dirname(ifile))
     print('Reading: {} \nWriting: {}'.format(ifile,ofile))
     with open(ofile,'wb') as of:
         _copy_buffered(gdifile,of)
@@ -34,7 +34,7 @@ def main(argv):
         gdifix(*argv[1:])
     else:
         print('gdifix, converts a gdi dump into a valid iso file\n')
-        print('Usage: gdifix.py disc.gdi fixed.iso')
+        print('Usage: gdifix.py disc.gdi [fixed.iso]')
         print('\nFamilyGuy 2014')
 
 if __name__ == '__main__':
