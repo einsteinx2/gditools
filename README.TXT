@@ -1,9 +1,15 @@
+                                ___ __              __    
+                     ____ _____/ (_) /_____  ____  / /____
+                    / __ `/ __  / / __/ __ \/ __ \/ / ___/
+                   / /_/ / /_/ / / /_/ /_/ / /_/ / (__  ) 
+                   \__, /\__,_/_/\__/\____/\____/_/____/  
+                  /____/
 Description:
 
-    gditools, a python library to extract files, sorttxt.txt and 
-    bootsector (ip.bin) from SEGA Gigabyte Disc (GD-ROM) dumps.
+    gditools, a Python library to extract files, sorttxt.txt and 
+    bootsector (IP.BIN) from SEGA Gigabyte Disc (GD-ROM) dumps.
 
-    The goals is to make it efficient, readable and multiplatform.
+    The goals is to make it efficient, readable and multi-platform.
 
     As of December 2014 it's tested working on Linux and Win7 under 
     python 2.7 but it was only tested on x86_64 processors. The 
@@ -23,7 +29,7 @@ Description:
     download section.
     
     bin2iso.py and gdifix.py (creating a single .iso from a gdi dump)
-    are provided in the Examples folder. They can be used as is or be
+    are provided in the 'addons' folder. They can be used as is or be
     used to see how to incorporate gditools.py in another project.
 
     See the Legal Stuff section at the end of this readme for the infos
@@ -42,7 +48,8 @@ Description:
 
 Requirements:
    - Python 2.7.x, Python 3 won't work.
-   - On Windows you have to add the python folder to your path manually.
+   - On Windows you have to add the python folder to your path manually (or 
+     choose the option when installing).
 
 ****************
 
@@ -111,6 +118,7 @@ Legal Stuff:
     
     Original iso9660.py by Barney Gale : github.com/barneygale/iso9660
     iso9660.py is licensed under a BSD license, a copy of which is 
-    provided in the licences folder: iso9660_licente.txt
+    provided in the licences folder: iso9660_license.txt
 
 
+- eof -

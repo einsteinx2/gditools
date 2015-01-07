@@ -1,0 +1,105 @@
+object frmSettings: TfrmSettings
+  Left = 594
+  Height = 182
+  Top = 399
+  Width = 320
+  AutoSize = True
+  BorderStyle = bsDialog
+  Caption = 'Settings'
+  ClientHeight = 182
+  ClientWidth = 320
+  Position = poScreenCenter
+  LCLVersion = '1.2.6.0'
+  object gbxPython: TGroupBox
+    Left = 4
+    Height = 136
+    Top = 4
+    Width = 312
+    Align = alClient
+    BorderSpacing.Around = 4
+    Caption = ' Python Executable: '
+    ClientHeight = 118
+    ClientWidth = 308
+    TabOrder = 0
+    object lblPythonHint: TLabel
+      Left = 12
+      Height = 80
+      Top = 4
+      Width = 284
+      Align = alClient
+      AutoSize = False
+      BorderSpacing.Left = 8
+      BorderSpacing.Right = 8
+      BorderSpacing.Around = 4
+      Caption = 'Please select the location of your Python 2 executable.'#13#10#13#10'If your Python 2 executable is already in your PATH,'#13#10'inputting ''python'' in the box below should be fine.'
+      ParentColor = False
+    end
+    object pnlPython: TPanel
+      Left = 0
+      Height = 30
+      Top = 88
+      Width = 308
+      Align = alBottom
+      BevelOuter = bvNone
+      ClientHeight = 30
+      ClientWidth = 308
+      TabOrder = 0
+      object btnPythonFileName: TButton
+        Left = 264
+        Height = 25
+        Top = 0
+        Width = 35
+        Anchors = [akTop, akRight]
+        Caption = '...'
+        OnClick = btnPythonFileNameClick
+        TabOrder = 0
+      end
+      object edtPythonFileName: TEdit
+        Left = 10
+        Height = 23
+        Top = 2
+        Width = 246
+        Anchors = [akTop, akLeft, akRight]
+        BorderSpacing.Bottom = 10
+        TabOrder = 1
+        Text = 'python'
+      end
+    end
+  end
+  object pnlButtons: TPanel
+    Left = 0
+    Height = 38
+    Top = 144
+    Width = 320
+    Align = alBottom
+    BevelOuter = bvNone
+    ClientHeight = 38
+    ClientWidth = 320
+    TabOrder = 1
+    object btnOK: TButton
+      Left = 112
+      Height = 25
+      Top = 8
+      Width = 99
+      Caption = 'OK'
+      ModalResult = 1
+      TabOrder = 0
+    end
+    object btnCancel: TButton
+      Left = 213
+      Height = 25
+      Top = 8
+      Width = 99
+      Caption = 'Cancel'
+      ModalResult = 2
+      TabOrder = 1
+    end
+  end
+  object opdPythonFileName: TOpenDialog
+    Title = 'Please select the Python 2 executable...'
+    Filter = 'Python 2|python;python.exe|All Files|*.*'
+    Options = [ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
+    left = 8
+    top = 144
+  end
+end

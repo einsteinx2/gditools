@@ -1,0 +1,114 @@
+object frmExtractAll: TfrmExtractAll
+  Left = 462
+  Height = 285
+  Top = 270
+  Width = 320
+  BorderStyle = bsDialog
+  Caption = 'Extract All'
+  ClientHeight = 285
+  ClientWidth = 320
+  OnCreate = FormCreate
+  Position = poScreenCenter
+  LCLVersion = '1.2.6.0'
+  object gbxDataDir: TGroupBox
+    Left = 8
+    Height = 80
+    Top = 8
+    Width = 304
+    Caption = ' Data Directory: '
+    ClientHeight = 62
+    ClientWidth = 300
+    TabOrder = 0
+    object edtDataDir: TEdit
+      Left = 8
+      Height = 23
+      Top = 8
+      Width = 280
+      TabOrder = 0
+      Text = 'data'
+    end
+    object cbxVolumeLabel: TCheckBox
+      Left = 8
+      Height = 19
+      Top = 38
+      Width = 114
+      Caption = 'Use Volume Label'
+      OnChange = cbxVolumeLabelChange
+      TabOrder = 1
+    end
+  end
+  object gbxOutputDir: TGroupBox
+    Left = 8
+    Height = 56
+    Top = 96
+    Width = 304
+    Caption = ' Output Directory: '
+    ClientHeight = 38
+    ClientWidth = 300
+    TabOrder = 1
+    object edtOutputDir: TEdit
+      Left = 8
+      Height = 23
+      Top = 8
+      Width = 240
+      TabOrder = 0
+    end
+    object btnOutputDir: TButton
+      Left = 256
+      Height = 25
+      Top = 6
+      Width = 35
+      Caption = '...'
+      OnClick = btnOutputDirClick
+      TabOrder = 1
+    end
+  end
+  object ckgOptions: TCheckGroup
+    Left = 7
+    Height = 80
+    Top = 160
+    Width = 305
+    AutoFill = True
+    Caption = ' Options: '
+    ChildSizing.LeftRightSpacing = 6
+    ChildSizing.TopBottomSpacing = 6
+    ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+    ChildSizing.EnlargeVertical = crsHomogenousChildResize
+    ChildSizing.ShrinkHorizontal = crsScaleChilds
+    ChildSizing.ShrinkVertical = crsScaleChilds
+    ChildSizing.Layout = cclLeftToRightThenTopToBottom
+    ChildSizing.ControlsPerLine = 1
+    ClientHeight = 62
+    ClientWidth = 301
+    Items.Strings = (
+      'Extract Bootsector (IP.BIN)'
+      'Generate Sort File (sorttxt.txt)'
+    )
+    TabOrder = 2
+    Data = {
+      020000000202
+    }
+  end
+  object btnOK: TButton
+    Left = 112
+    Height = 25
+    Top = 248
+    Width = 99
+    Caption = 'OK'
+    ModalResult = 1
+    TabOrder = 3
+  end
+  object btnCancel: TButton
+    Left = 213
+    Height = 25
+    Top = 248
+    Width = 99
+    Caption = 'Cancel'
+    ModalResult = 2
+    TabOrder = 4
+  end
+  object bfdExtractAll: TSelectDirectoryDialog
+    left = 208
+    top = 112
+  end
+end
