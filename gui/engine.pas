@@ -13,6 +13,8 @@ const
   SDIR_DATA_VOLUME_LABEL      = '__volume_label__';
 
 type
+  EGDReader = class(Exception);
+
   { TFileEntry }
 
   TFileEntry = class(TObject)
@@ -85,6 +87,9 @@ uses
 {$IFDEF Unix}
   , UTF8Process
 {$ENDIF};
+
+const
+  SFILE_GDITOOLS_PY = 'gditools.py';
 
 { TFileEntry }
 
@@ -250,6 +255,10 @@ var
   SavedDirectory: TFileName;
 
 begin
+  // Checking the presence of the gditools.py script
+  if not FileExists(fPythonScriptFileName) then
+    raise EGDReader.Create('The gditools.py script wasn''t found!');
+
   // Saving the current directory
   SavedDirectory := GetCurrentDir;
 
@@ -340,7 +349,7 @@ begin
     Sorted := True;
     Duplicates := dupIgnore;
   end;
-  fPythonScriptFileName:= IncludeTrailingPathDelimiter(Application.Location) + 'engine' + PathDelim + 'gditools.py';
+  fPythonScriptFileName:= IncludeTrailingPathDelimiter(Application.Location) + 'engine' + PathDelim + SFILE_GDITOOLS_PY;
 end;
 
 destructor TGDReader.Destroy;
@@ -356,7 +365,7 @@ const
   FILELIST_SIGN = 'Listing all files in the filesystem:';
 
 var
-  Index, i: Integer;
+  Index, i, StartIndex: Integer;
   OutputBuffer, RecordFullPath, RecordDirectoryPath, RecordFileName: string;
   FilesList: TStringList;
   Buffer: TFilesList;
@@ -369,7 +378,10 @@ begin
   OutputBuffer := RunCommand(GetCurrentDir, '--list');
 
   // Extracting the files listing
-  Index := Pos(FILELIST_SIGN, OutputBuffer) + Length(FILELIST_SIGN) + 1;
+  StartIndex := Pos(FILELIST_SIGN, OutputBuffer);
+  if StartIndex = 0 then
+    raise EGDReader.CreateFmt('Error when parsing the GD-ROM Image.%s%s', [sLineBreak, OutputBuffer]);
+  Index := StartIndex + Length(FILELIST_SIGN) + 1;
 
   // Parsing the files list...
   FilesList := TStringList.Create;
@@ -536,4 +548,4 @@ begin
   Result := RunCommandFileOutput(Format('--data-folder %s -s', [DataFolder]), OutputFileName);
 end;
 
-end.
+end.

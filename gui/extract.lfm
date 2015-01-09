@@ -108,6 +108,7 @@ object frmExtractAll: TfrmExtractAll
     TabOrder = 4
   end
   object bfdExtractAll: TSelectDirectoryDialog
+    Title = 'Select the output directory:'
     left = 208
     top = 112
   end

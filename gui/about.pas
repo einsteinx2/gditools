@@ -14,11 +14,12 @@ type
   TfrmAbout = class(TForm)
     btnClose: TButton;
     imgLogo: TImage;
-    lblAppName: TLabel;
     lblAppInfo: TLabel;
+    lblAppName: TLabel;
     lblAuthors: TLabel;
-    lblPoweredBy: TLabel;
     lblCredits: TLabel;
+    lblIcons: TLabel;
+    lblPoweredBy: TLabel;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure lblAuthorsClick(Sender: TObject);

@@ -99,7 +99,7 @@ object frmSettings: TfrmSettings
     Title = 'Please select the Python 2 executable...'
     Filter = 'Python 2|python;python.exe|All Files|*.*'
     Options = [ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
-    left = 8
-    top = 144
+    left = 136
+    top = 80
   end
 end

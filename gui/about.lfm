@@ -1,13 +1,13 @@
 object frmAbout: TfrmAbout
   Left = 639
-  Height = 150
+  Height = 166
   Top = 402
-  Width = 430
+  Width = 406
   AutoSize = True
   BorderStyle = bsDialog
   Caption = '<Dynamic Title>'
-  ClientHeight = 150
-  ClientWidth = 430
+  ClientHeight = 166
+  ClientWidth = 406
   OnCreate = FormCreate
   Position = poScreenCenter
   LCLVersion = '1.2.6.0'
@@ -16,7 +16,7 @@ object frmAbout: TfrmAbout
     Height = 128
     Top = 8
     Width = 128
-    BorderSpacing.Bottom = 10
+    BorderSpacing.Bottom = 30
     Picture.Data = {
       1754506F727461626C654E6574776F726B477261706869635344000089504E47
       0D0A1A0A0000000D4948445200000080000000800806000000C33E61CB000000
@@ -569,9 +569,9 @@ object frmAbout: TfrmAbout
     }
   end
   object btnClose: TButton
-    Left = 312
+    Left = 288
     Height = 25
-    Top = 120
+    Top = 136
     Width = 112
     Anchors = [akRight, akBottom]
     Caption = 'Okay, he!'
@@ -579,17 +579,18 @@ object frmAbout: TfrmAbout
     TabOrder = 0
   end
   object lblAppName: TLabel
-    Left = 145
+    Left = 144
     Height = 15
     Top = 8
     Width = 164
+    BorderSpacing.Top = 8
     Caption = '<Application Title goes here>'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
   end
   object lblAppInfo: TLabel
-    Left = 145
+    Left = 144
     Height = 15
     Top = 24
     Width = 159
@@ -598,7 +599,7 @@ object frmAbout: TfrmAbout
     ParentFont = False
   end
   object lblAuthors: TLabel
-    Left = 145
+    Left = 144
     Height = 15
     Hint = 'http://www.sizious.com/'
     Top = 48
@@ -611,21 +612,29 @@ object frmAbout: TfrmAbout
     OnMouseEnter = lblAuthorsMouseEnter
     OnMouseLeave = lblAuthorsMouseLeave
   end
-  object lblCredits: TLabel
-    Left = 145
-    Height = 15
-    Top = 88
-    Width = 249
-    BorderSpacing.Right = 10
-    Caption = 'Inspired by GD-ROM Explorer by Japanese Cake'
-    ParentColor = False
-  end
   object lblPoweredBy: TLabel
-    Left = 145
+    Left = 144
     Height = 15
     Top = 72
     Width = 199
     Caption = 'Powered by gditools.py by FamilyGuy'
+    ParentColor = False
+  end
+  object lblCredits: TLabel
+    Left = 144
+    Height = 15
+    Top = 88
+    Width = 249
+    Caption = 'Inspired by GD-ROM Explorer by Japanese Cake'
+    ParentColor = False
+  end
+  object lblIcons: TLabel
+    Left = 144
+    Height = 15
+    Top = 112
+    Width = 253
+    BorderSpacing.Right = 10
+    Caption = 'Icons created by Oxygen-Icons.org and Iconleak'
     ParentColor = False
   end
 end
