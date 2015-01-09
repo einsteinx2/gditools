@@ -1,3 +1,9 @@
+{     
+  gditools.py GUI are licensed under the GNU General Public License (version 3), 
+  a copy of which is provided in the licences folder: GNU_GPL_v3.txt.
+  
+  SiZiOUS 2015 / www.sizious.com
+}
 unit Settings;
 
 {$mode objfpc}{$H+}

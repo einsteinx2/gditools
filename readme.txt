@@ -4,10 +4,10 @@
                    / /_/ / /_/ / / /_/ /_/ / /_/ / (__  ) 
                    \__, /\__,_/_/\__/\____/\____/_/____/  
                   /____/
-Description:
 
     gditools, a Python library to extract files, sorttxt.txt and 
-    bootsector (IP.BIN) from SEGA Gigabyte Disc (GD-ROM) dumps.
+    bootsector (IP.BIN) from SEGA Gigabyte Disc (GD-ROM) dumps in 
+    gdi format.
 
     The goals is to make it efficient, readable and multi-platform.
 
@@ -25,7 +25,7 @@ Description:
     git clone git://git.code.sf.net/p/dcisotools/code dcisotools-code
 
     Releases of stable code might be sporadically packaged into a .zip
-    archive for convenience, and made available on the sourceforge page
+    archive for convenience, and made available on the SourceForge page
     download section.
     
     bin2iso.py and gdifix.py (creating a single .iso from a gdi dump)
@@ -37,23 +37,29 @@ Description:
 
 
     Enjoy!    
+ 
+       
+    FamilyGuy 2015
 
-        
-    FamilyGuy 2014
 
+    Thanks to SiZiOUS for testing the code, providing support and making the 
+    multi-platform GUI.
 
-    Thanks to SiZiOUS for testing the code and providing support.
-        
-****************
-
-Requirements:
+     ___                _                        __    
+    / _ \___ ___ ___ __(_)______ __ _  ___ ___  / /____
+___/ , _/ -_) _ `/ // / / __/ -_)  ' \/ -_) _ \/ __(_-<_________________________
+  /_/|_|\__/\_, /\_,_/_/_/  \__/_/_/_/\__/_//_/\__/___/
+             /_/
+		   
    - Python 2.7.x, Python 3 won't work.
    - On Windows you have to add the python folder to your path manually (or 
      choose the option when installing).
-
-****************
-
-Usage:
+     __  __                 
+    / / / /__ ___ ____ ____ 
+___/ /_/ (_-</ _ `/ _ `/ -_)____________________________________________________
+   \____/___/\_,_/\_, /\__/ 
+                 /___/      
+			  
     python gditools.py -i input_gdi [options]
     
       -h, --help             Display this help
@@ -69,9 +75,12 @@ Usage:
       --silent               Minimal verbosity mode
       [no option]            Display gdi infos if not silent
 
-****************
-
-Usage examples:
+     __  __                    ____                     __      
+    / / / /__ ___ ____ ____   / __/_ _____ ___ _  ___  / /__ ___
+___/ /_/ (_-</ _ `/ _ `/ -_)_/ _/ \ \ / _ `/  ' \/ _ \/ / -_|_-<________________
+   \____/___/\_,_/\_, /\__/ /___//_\_\\_,_/_/_/_/ .__/_/\__/___/
+                 /___/                         /_/              
+			  
   0- Listing all files in the gdi:
         gditools.py -i /folder/disc.gdi --list
 
@@ -106,19 +115,39 @@ Usage examples:
 
  10- Doing most of the above at once:
         gditools.py -i /folder/disc.gdi -s sorttxt.txt -b ip.bin 
-                    -o /OtherFolder --data-folder __volume_label__  --extract-all 
+                    -o /OtherFolder --data-folder __volume_label__  --extract-all
 
-****************
+     __  __    _             __  __         _______  ______
+    / / / /__ (_)__  ___ _  / /_/ /  ___   / ___/ / / /  _/
+___/ /_/ (_-</ / _ \/ _ `/ / __/ _ \/ -_) / (_ / /_/ // /_______________________  
+   \____/___/_/_//_/\_, /  \__/_//_/\__/  \___/\____/___/  
+                   /___/                                   
+				   
+    For your convenience you can use the GUI provided for your platform.
 
-Legal Stuff:
+    To use it it's really simple:
+      1. Download the package for your platform (currently Windows or 
+         Linux 64-bit)
+      2. Extract the GUI binary at the same location of your gditools.py script.
+      3. Just double-click on the 'gditools.exe' or 'gditools' binary to run it.
+
+    The usage is pretty much the same as the excellent GD-ROM Explorer made by
+    Japanese Cake which is only available on Windows.
+
+    If you want to modify/compile the GUI for your platform, please use the
+    Lazarus IDE: http://www.lazarus.freepascal.org/
+      __                 __  ______       ______
+     / /  ___ ___ ____ _/ / / __/ /___ __/ _/ _/
+___ / /__/ -_) _ `/ _ `/ / _\ \/ __/ // / _/ _/_________________________________ 
+   /____/\__/\_, /\_,_/_/ /___/\__/\_,_/_//_/   
+            /___/                               
+
     gditools.py and provided examples are licensed under the GNU
     General Public License (version 3), a copy of which is provided
     in the licences folder: GNU_GPL_v3.txt
-
     
     Original iso9660.py by Barney Gale : github.com/barneygale/iso9660
     iso9660.py is licensed under a BSD license, a copy of which is 
     provided in the licences folder: iso9660_license.txt
 
-
-- eof -
+______________________________________________________________________/ eof /___

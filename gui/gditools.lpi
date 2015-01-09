@@ -18,7 +18,7 @@
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="1"/>
-      <BuildNr Value="85"/>
+      <BuildNr Value="86"/>
       <Language Value="040C"/>
       <StringTable CompanyName="SiZiOUS" FileDescription="gditools.py GUI" InternalName="gditools.exe" LegalCopyright="© Copyleft 2015" LegalTrademarks="gditools.py was made FamilyGuy" OriginalFilename="gditools" ProductName="gditools.py GUI" ProductVersion="1.0"/>
     </VersionInfo>

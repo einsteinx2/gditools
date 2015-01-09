@@ -1,3 +1,9 @@
+{     
+  gditools.py GUI are licensed under the GNU General Public License (version 3), 
+  a copy of which is provided in the licences folder: GNU_GPL_v3.txt.
+  
+  SiZiOUS 2015 / www.sizious.com
+}
 unit Engine;
 
 {$mode objfpc}{$H+}
@@ -257,7 +263,7 @@ var
 begin
   // Checking the presence of the gditools.py script
   if not FileExists(fPythonScriptFileName) then
-    raise EGDReader.Create('The gditools.py script wasn''t found!');
+    raise EGDReader.Create('The gditools.py script wasn''t found');
 
   // Saving the current directory
   SavedDirectory := GetCurrentDir;
@@ -349,7 +355,8 @@ begin
     Sorted := True;
     Duplicates := dupIgnore;
   end;
-  fPythonScriptFileName:= IncludeTrailingPathDelimiter(Application.Location) + 'engine' + PathDelim + SFILE_GDITOOLS_PY;
+  fPythonScriptFileName:= IncludeTrailingPathDelimiter(Application.Location)
+    + SFILE_GDITOOLS_PY;
 end;
 
 destructor TGDReader.Destroy;
@@ -380,7 +387,8 @@ begin
   // Extracting the files listing
   StartIndex := Pos(FILELIST_SIGN, OutputBuffer);
   if StartIndex = 0 then
-    raise EGDReader.CreateFmt('Error when parsing the GD-ROM Image.%s%s', [sLineBreak, OutputBuffer]);
+    raise EGDReader.CreateFmt('Error when parsing the GD-ROM Image%s%s',
+      [sLineBreak, Trim(OutputBuffer)]);
   Index := StartIndex + Length(FILELIST_SIGN) + 1;
 
   // Parsing the files list...
