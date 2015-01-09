@@ -4,7 +4,7 @@ object frmMain: TfrmMain
   Top = 128
   Width = 784
   Caption = '<Dynamic Title>'
-  ClientHeight = 502
+  ClientHeight = 522
   ClientWidth = 784
   Menu = mmMain
   OnClose = FormClose
@@ -20,7 +20,7 @@ object frmMain: TfrmMain
     Align = alTop
     BorderSpacing.Around = 4
     Caption = ' Disc Image: '
-    ClientHeight = 31
+    ClientHeight = 30
     ClientWidth = 772
     TabOrder = 0
     object btnOpen: TButton
@@ -35,7 +35,7 @@ object frmMain: TfrmMain
     end
     object edtFileName: TEdit
       Left = 8
-      Height = 23
+      Height = 27
       Top = 0
       Width = 672
       Anchors = [akTop, akLeft, akRight]
@@ -46,23 +46,22 @@ object frmMain: TfrmMain
   end
   object GroupBox2: TGroupBox
     Left = 4
-    Height = 418
+    Height = 440
     Top = 57
     Width = 776
     Align = alClient
     BorderSpacing.Around = 4
     Caption = ' Contents: '
-    ClientHeight = 400
+    ClientHeight = 421
     ClientWidth = 772
     TabOrder = 1
     object tvwDirectories: TTreeView
       Left = 4
-      Height = 392
+      Height = 413
       Top = 4
       Width = 264
       Align = alLeft
       BorderSpacing.Around = 4
-      DefaultItemHeight = 18
       Images = ilDirectories
       ReadOnly = True
       TabOrder = 0
@@ -71,7 +70,7 @@ object frmMain: TfrmMain
     end
     object lvwFiles: TListView
       Left = 281
-      Height = 392
+      Height = 413
       Top = 4
       Width = 487
       Align = alClient
@@ -80,11 +79,12 @@ object frmMain: TfrmMain
         item
           AutoSize = True
           Caption = 'Filename'
-          Width = 483
+          Width = 469
         end>
       ColumnClick = False
       PopupMenu = pmFiles
       ReadOnly = True
+      RowSelect = True
       SmallImages = ilFiles
       TabOrder = 1
       ViewStyle = vsReport
@@ -94,21 +94,21 @@ object frmMain: TfrmMain
     end
     object Splitter1: TSplitter
       Left = 272
-      Height = 400
+      Height = 421
       Top = 0
       Width = 5
     end
   end
   object sbrMain: TStatusBar
     Left = 0
-    Height = 23
-    Top = 479
+    Height = 21
+    Top = 501
     Width = 784
     AutoHint = True
     Panels = <>
   end
   object ilDirectories: TImageList
-    left = 96
+    left = 176
     top = 96
     Bitmap = {
       4C69020000001000000010000000000000000000000000000000000000000000
@@ -179,8 +179,8 @@ object frmMain: TfrmMain
     }
   end
   object ilFiles: TImageList
-    left = 320
-    top = 120
+    left = 408
+    top = 328
     Bitmap = {
       4C690200000010000000100000000000000000000000A4A4A459ABABAB69A9A9
       A969A6A6A669A3A3A369A1A1A1699D9D9D687D7D7D2200000000000000000000
@@ -250,7 +250,7 @@ object frmMain: TfrmMain
     }
   end
   object mmMain: TMainMenu
-    left = 32
+    left = 72
     top = 96
     object miFile: TMenuItem
       Caption = 'File'
@@ -339,7 +339,7 @@ object frmMain: TfrmMain
     end
   end
   object pmFiles: TPopupMenu
-    left = 376
+    left = 408
     top = 120
     object miOpenItem: TMenuItem
       Caption = 'Open'
@@ -356,10 +356,10 @@ object frmMain: TfrmMain
   end
   object svdExtract: TSaveDialog
     Title = 'Extract the selected file to...'
-    Filter = 'All Files|*.*'
+    Filter = 'All Files (*.*)|*.*'
     Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing, ofViewDetail]
-    left = 440
-    top = 120
+    left = 408
+    top = 192
   end
   object tmrResetStatusBar: TTimer
     Enabled = False
@@ -371,18 +371,18 @@ object frmMain: TfrmMain
   object opdGDI: TOpenDialog
     Title = 'Please select the GD-ROM Image to open...'
     DefaultExt = '.gdi'
-    Filter = 'GD-ROM Images Files|*.gdi|All Files (*.*)|*.*'
+    Filter = 'GD-ROM Images Files (*.gdi)|*.gdi;*.GDI|All Files (*.*)|*.*'
     Options = [ofFileMustExist, ofEnableSizing, ofViewDetail]
-    left = 720
+    left = 672
     top = 120
   end
   object svdExtractBootstrap: TSaveDialog
     Title = 'Extract the Bootstrap file to...'
     DefaultExt = '.BIN'
     FileName = 'IP.BIN'
-    Filter = 'Bootstrap Files|IP.BIN|Binary Files|*.BIN|All Files|*.*'
+    Filter = 'Bootstrap Files (IP.BIN)|IP.BIN|Binary Files (*.BIN)|*.BIN|All Files (*.*)|*.*'
     Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing, ofViewDetail]
-    left = 528
-    top = 120
+    left = 408
+    top = 256
   end
 end
