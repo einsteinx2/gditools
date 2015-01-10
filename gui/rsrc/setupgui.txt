@@ -10,7 +10,11 @@
     be used alone.
 
     To use it it's really simple:
+<<<<<<< HEAD
       0. Download the gditools.py original package and extract it.
+=======
+      0. Download the gditools.py original package.
+>>>>>>> faa4d73e447f943623336e59fd4ae5b71083e75f
       1. Download the GUI package for your platform (currently Windows or 
          Linux 64-bit).
       2. Extract the GUI binary at the same location of your gditools.py script.
