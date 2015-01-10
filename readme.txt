@@ -42,8 +42,7 @@
     FamilyGuy 2015
 
 
-    Thanks to SiZiOUS for testing the code, providing support and making the 
-    multi-platform GUI.
+    Thanks to SiZiOUS for testing the code, providing support and for the GUI.
 
      ___                _                        __    
     / _ \___ ___ ___ __(_)______ __ _  ___ ___  / /____
@@ -142,7 +141,7 @@ ___ / /__/ -_) _ `/ _ `/ / _\ \/ __/ // / _/ _/_________________________________
    /____/\__/\_, /\_,_/_/ /___/\__/\_,_/_//_/   
             /___/                               
 
-    gditools.py and provided examples are licensed under the GNU
+    gditools.py, provided addons and the GUI are licensed under the GNU
     General Public License (version 3), a copy of which is provided
     in the licences folder: GNU_GPL_v3.txt
     

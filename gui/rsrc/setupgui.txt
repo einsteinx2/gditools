@@ -1,0 +1,25 @@
+                                ___ __              __    
+                     ____ _____/ (_) /_____  ____  / /____
+                    / __ `/ __  / / __/ __ \/ __ \/ / ___/
+                   / /_/ / /_/ / / /_/ /_/ / /_/ / (__  ) 
+                   \__, /\__,_/_/\__/\____/\____/_/____/  
+                  /____/
+
+    For your convenience you can use the GUI provided for your platform.
+    This package is an addon for the original gditools.py package. It can't
+    be used alone.
+
+    To use it it's really simple:
+      0. Download the gditools.py original package and extract it.
+      1. Download the GUI package for your platform (currently Windows or 
+         Linux 64-bit).
+      2. Extract the GUI binary at the same location of your gditools.py script.
+      3. Just double-click on the 'gditools.exe' or 'gditools' binary to run it.
+
+    The usage is pretty much the same as the excellent GD-ROM Explorer made by
+    Japanese Cake which is only available on Windows.
+
+    If you want to modify/compile the GUI for your platform, please use the
+    Lazarus IDE: http://www.lazarus.freepascal.org/
+
+______________________________________________________________________/ eof /___
