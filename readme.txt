@@ -35,21 +35,17 @@
     See the Legal Stuff section at the end of this readme for the infos
     on licensing and using this project in another one.
 
-
     Enjoy!    
- 
-       
+      
     FamilyGuy 2015
 
-
     Thanks to SiZiOUS for testing the code, providing support and for the GUI.
-
      ___                _                        __    
     / _ \___ ___ ___ __(_)______ __ _  ___ ___  / /____
 ___/ , _/ -_) _ `/ // / / __/ -_)  ' \/ -_) _ \/ __(_-<_________________________
   /_/|_|\__/\_, /\_,_/_/_/  \__/_/_/_/\__/_//_/\__/___/
              /_/
-		   
+			 
    - Python 2.7.x, Python 3 won't work.
    - On Windows you have to add the python folder to your path manually (or 
      choose the option when installing).
@@ -125,8 +121,8 @@ ___/ /_/ (_-</ / _ \/ _ `/ / __/ _ \/ -_) / (_ / /_/ // /_______________________
     For your convenience you can use the GUI provided for your platform.
 
     To use it it's really simple:
-      1. Download the package for your platform (currently Windows or 
-         Linux 64-bit)
+      1. Download the package for your platform (Windows, Linux 64-bit or 
+         Mac OS X).
       2. Extract the GUI binary at the same location of your gditools.py script.
       3. Just double-click on the 'gditools.exe' or 'gditools' binary to run it.
 
@@ -135,6 +131,9 @@ ___/ /_/ (_-</ / _ \/ _ `/ / __/ _ \/ -_) / (_ / /_/ // /_______________________
 
     If you want to modify/compile the GUI for your platform, please use the
     Lazarus IDE: http://www.lazarus.freepascal.org/
+	
+    Please note this procedure is also included in the gditools-gui-* packages
+    into the 'setupgui.txt' file.
       __                 __  ______       ______
      / /  ___ ___ ____ _/ / / __/ /___ __/ _/ _/
 ___ / /__/ -_) _ `/ _ `/ / _\ \/ __/ // / _/ _/_________________________________ 

@@ -88,9 +88,10 @@ uses
 {$IFDEF DEBUG}
   Dialogs,
 {$ENDIF}
+  Utils,
   Forms,
   Process
-{$IFDEF Unix}
+{$IF Defined(Unix) OR Defined(Darwin)}
   , UTF8Process
 {$ENDIF};
 
@@ -355,8 +356,7 @@ begin
     Sorted := True;
     Duplicates := dupIgnore;
   end;
-  fPythonScriptFileName:= IncludeTrailingPathDelimiter(Application.Location)
-    + SFILE_GDITOOLS_PY;
+  fPythonScriptFileName:= GetApplicationPath + SFILE_GDITOOLS_PY;
 end;
 
 destructor TGDReader.Destroy;
@@ -556,4 +556,4 @@ begin
   Result := RunCommandFileOutput(Format('--data-folder %s -s', [DataFolder]), OutputFileName);
 end;
 
-end.
+end.

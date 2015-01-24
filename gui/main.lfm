@@ -1,9 +1,9 @@
 object frmMain: TfrmMain
-  Left = 399
+  Left = 259
   Height = 522
-  Top = 128
+  Top = 137
   Width = 784
-  Caption = '<Dynamic Title>'
+  Caption = '<Dynamic Title> (Main Form)'
   ClientHeight = 522
   ClientWidth = 784
   Menu = mmMain
@@ -20,11 +20,11 @@ object frmMain: TfrmMain
     Align = alTop
     BorderSpacing.Around = 4
     Caption = ' Disc Image: '
-    ClientHeight = 30
-    ClientWidth = 772
+    ClientHeight = 27
+    ClientWidth = 768
     TabOrder = 0
     object btnOpen: TButton
-      Left = 684
+      Left = 680
       Height = 25
       Top = 0
       Width = 83
@@ -35,33 +35,34 @@ object frmMain: TfrmMain
     end
     object edtFileName: TEdit
       Left = 8
-      Height = 27
+      Height = 22
       Top = 0
-      Width = 672
+      Width = 668
       Anchors = [akTop, akLeft, akRight]
       Color = clBtnFace
       ReadOnly = True
       TabOrder = 1
     end
   end
-  object GroupBox2: TGroupBox
+  object gbxContents: TGroupBox
     Left = 4
-    Height = 440
+    Height = 446
     Top = 57
     Width = 776
     Align = alClient
     BorderSpacing.Around = 4
     Caption = ' Contents: '
-    ClientHeight = 421
-    ClientWidth = 772
+    ClientHeight = 424
+    ClientWidth = 768
     TabOrder = 1
     object tvwDirectories: TTreeView
       Left = 4
-      Height = 413
+      Height = 416
       Top = 4
       Width = 264
       Align = alLeft
       BorderSpacing.Around = 4
+      DefaultItemHeight = 18
       Images = ilDirectories
       ReadOnly = True
       TabOrder = 0
@@ -70,16 +71,16 @@ object frmMain: TfrmMain
     end
     object lvwFiles: TListView
       Left = 281
-      Height = 413
+      Height = 416
       Top = 4
-      Width = 487
+      Width = 483
       Align = alClient
       BorderSpacing.Around = 4
       Columns = <      
         item
           AutoSize = True
           Caption = 'Filename'
-          Width = 469
+          Width = 481
         end>
       ColumnClick = False
       PopupMenu = pmFiles
@@ -94,15 +95,15 @@ object frmMain: TfrmMain
     end
     object Splitter1: TSplitter
       Left = 272
-      Height = 421
+      Height = 424
       Top = 0
       Width = 5
     end
   end
   object sbrMain: TStatusBar
     Left = 0
-    Height = 21
-    Top = 501
+    Height = 15
+    Top = 507
     Width = 784
     AutoHint = True
     Panels = <>
@@ -258,6 +259,7 @@ object frmMain: TfrmMain
         Caption = 'Open...'
         Hint = 'Load a GD-ROM Image file in the application.'
         ShortCut = 16463
+        ShortCutKey2 = 4175
         OnClick = btnOpenClick
       end
       object miCloseFile: TMenuItem
@@ -272,6 +274,7 @@ object frmMain: TfrmMain
         Caption = 'Quit'
         Hint = 'Return to your life.'
         ShortCut = 16465
+        ShortCutKey2 = 4177
         OnClick = miQuitClick
       end
     end
@@ -281,6 +284,7 @@ object frmMain: TfrmMain
         Caption = 'Extract All...'
         Hint = 'Extract the whole data of the current GD-ROM image.'
         ShortCut = 16501
+        ShortCutKey2 = 4213
         OnClick = miExtractAllClick
       end
       object miExtract2: TMenuItem

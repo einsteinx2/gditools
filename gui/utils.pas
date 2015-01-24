@@ -16,11 +16,15 @@ uses
 function GetNodePath(TreeNode: TTreeNode): string;
 procedure LoadConfig;
 procedure SaveConfig;
+function GetApplicationPath: TFileName;
 
 implementation
 
 uses
   Forms, IniFiles, Main;
+
+var
+  sAppPath: TFileName;
 
 { Thanks to L.Saenz
   http://www.swissdelphicenter.ch/torry/showcode.php?id=859 }
@@ -49,7 +53,7 @@ end;
 // Get the application configuration file name.
 function GetConfigFile: TFileName;
 begin
-  Result := IncludeTrailingPathDelimiter(Application.Location) +
+  Result := GetApplicationPath +
     ChangeFileExt(ExtractFileName(Application.ExeName), '.conf');
 end;
 
@@ -80,6 +84,34 @@ begin
     IniFile.Free;
   end;
 end;
+
+// Get the application location
+function GetApplicationPath: TFileName;
+var
+  Path: TFileName;
+{$IFDEF Darwin}
+  i: Integer;
+{$ENDIF}
+
+begin
+  if (sAppPath = '') then
+  begin
+    Path := Application.Location;
+{$IFDEF Darwin}
+    i := Pos('.app', Path);
+    if i > 0 then
+    begin
+      i := LastDelimiter('/', Copy(Path, 1, i));
+      Path := Copy(Path, 1, i);
+    end;
+{$ENDIF}
+    sAppPath := IncludeTrailingPathDelimiter(Path);
+  end;
+  Result := sAppPath;
+end;
+
+initialization
+  sAppPath := '';
 
 end.
 

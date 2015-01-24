@@ -3,6 +3,7 @@ object frmExtractAll: TfrmExtractAll
   Height = 285
   Top = 270
   Width = 320
+  BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Extract All'
   ClientHeight = 285
@@ -16,12 +17,12 @@ object frmExtractAll: TfrmExtractAll
     Top = 8
     Width = 304
     Caption = ' Data Directory: '
-    ClientHeight = 62
-    ClientWidth = 300
+    ClientHeight = 58
+    ClientWidth = 296
     TabOrder = 0
     object edtDataDir: TEdit
       Left = 8
-      Height = 23
+      Height = 22
       Top = 8
       Width = 280
       TabOrder = 0
@@ -29,9 +30,9 @@ object frmExtractAll: TfrmExtractAll
     end
     object cbxVolumeLabel: TCheckBox
       Left = 8
-      Height = 19
+      Height = 18
       Top = 38
-      Width = 114
+      Width = 133
       Caption = 'Use Volume Label'
       OnChange = cbxVolumeLabelChange
       TabOrder = 1
@@ -43,12 +44,12 @@ object frmExtractAll: TfrmExtractAll
     Top = 96
     Width = 304
     Caption = ' Output Directory: '
-    ClientHeight = 38
-    ClientWidth = 300
+    ClientHeight = 34
+    ClientWidth = 296
     TabOrder = 1
     object edtOutputDir: TEdit
       Left = 8
-      Height = 23
+      Height = 22
       Top = 8
       Width = 240
       TabOrder = 0
@@ -78,8 +79,8 @@ object frmExtractAll: TfrmExtractAll
     ChildSizing.ShrinkVertical = crsScaleChilds
     ChildSizing.Layout = cclLeftToRightThenTopToBottom
     ChildSizing.ControlsPerLine = 1
-    ClientHeight = 62
-    ClientWidth = 301
+    ClientHeight = 58
+    ClientWidth = 297
     Items.Strings = (
       'Extract Bootsector (IP.BIN)'
       'Generate Sort File (sorttxt.txt)'

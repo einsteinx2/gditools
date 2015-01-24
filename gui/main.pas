@@ -21,7 +21,7 @@ type
     btnOpen: TButton;
     edtFileName: TEdit;
     gbxDiscImage: TGroupBox;
-    GroupBox2: TGroupBox;
+    gbxContents: TGroupBox;
     ilDirectories: TImageList;
     ilFiles: TImageList;
     lvwFiles: TListView;
@@ -100,7 +100,14 @@ implementation
 {$R *.lfm}
 
 uses
-  Utils, Extract, SortFile, Settings, About;
+{$IFDEF Darwin}
+  LCLType,
+{$ENDIF}
+  Utils,
+  Extract,
+  SortFile,
+  Settings,
+  About;
 
 { TfrmMain }
 

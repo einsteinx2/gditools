@@ -18,9 +18,10 @@
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="1"/>
-      <BuildNr Value="87"/>
+      <RevisionNr Value="1"/>
+      <BuildNr Value="100"/>
       <Language Value="040C"/>
-      <StringTable CompanyName="SiZiOUS" FileDescription="gditools.py GUI" InternalName="gditools.exe" LegalCopyright="© Copyleft 2015" LegalTrademarks="gditools.py was made FamilyGuy" OriginalFilename="gditools" ProductName="gditools.py GUI" ProductVersion="1.0"/>
+      <StringTable Comments="www.sizious.com" CompanyName="SiZiOUS" FileDescription="gditools.py GUI" InternalName="gditools.exe" LegalCopyright="© Copyleft 2015" LegalTrademarks="gditools.py was made FamilyGuy" OriginalFilename="gditools" ProductName="gditools.py GUI" ProductVersion="1.0"/>
     </VersionInfo>
     <BuildModes Count="3">
       <Item1 Name="Default" Default="True"/>
@@ -89,6 +90,7 @@
           <Linking>
             <Debugging>
               <GenerateDebugInfo Value="False"/>
+              <StripSymbols Value="True"/>
             </Debugging>
             <LinkSmart Value="True"/>
             <Options>
@@ -98,6 +100,7 @@
             </Options>
           </Linking>
           <Other>
+            <WriteFPCLogo Value="False"/>
             <CompilerMessages>
               <MsgFileName Value=""/>
             </CompilerMessages>

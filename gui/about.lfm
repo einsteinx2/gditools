@@ -4,8 +4,9 @@ object frmAbout: TfrmAbout
   Top = 402
   Width = 406
   AutoSize = True
+  BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
-  Caption = '<Dynamic Title>'
+  Caption = '<Dynamic Title> (About Form)'
   ClientHeight = 166
   ClientWidth = 406
   OnCreate = FormCreate
@@ -580,9 +581,9 @@ object frmAbout: TfrmAbout
   end
   object lblAppName: TLabel
     Left = 144
-    Height = 15
+    Height = 16
     Top = 8
-    Width = 164
+    Width = 202
     BorderSpacing.Top = 8
     Caption = '<Application Title goes here>'
     Font.Style = [fsBold]
@@ -591,19 +592,19 @@ object frmAbout: TfrmAbout
   end
   object lblAppInfo: TLabel
     Left = 144
-    Height = 15
+    Height = 16
     Top = 24
-    Width = 159
+    Width = 195
     Caption = '<Version and Date goes here>'
     ParentColor = False
     ParentFont = False
   end
   object lblAuthors: TLabel
     Left = 144
-    Height = 15
+    Height = 16
     Hint = 'http://www.sizious.com/'
     Top = 48
-    Width = 142
+    Width = 174
     Caption = 'Created in 2015 by SiZiOUS'
     Font.Color = clHighlight
     ParentColor = False
@@ -614,27 +615,27 @@ object frmAbout: TfrmAbout
   end
   object lblPoweredBy: TLabel
     Left = 144
-    Height = 15
+    Height = 16
     Top = 72
-    Width = 199
+    Width = 235
     Caption = 'Powered by gditools.py by FamilyGuy'
     ParentColor = False
   end
   object lblCredits: TLabel
     Left = 144
-    Height = 15
+    Height = 16
     Top = 88
-    Width = 249
+    Width = 302
     Caption = 'Inspired by GD-ROM Explorer by Japanese Cake'
     ParentColor = False
   end
   object lblIcons: TLabel
     Left = 144
-    Height = 15
+    Height = 16
     Top = 112
-    Width = 253
+    Width = 305
     BorderSpacing.Right = 10
     Caption = 'Icons created by Oxygen-Icons.org and Iconleak'
     ParentColor = False
   end
-end
+end

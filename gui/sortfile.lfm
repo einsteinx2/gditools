@@ -3,6 +3,7 @@ object frmSortFile: TfrmSortFile
   Height = 190
   Top = 308
   Width = 320
+  BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Generate Sort File'
   ClientHeight = 190
@@ -16,12 +17,12 @@ object frmSortFile: TfrmSortFile
     Top = 8
     Width = 304
     Caption = ' Data Directory: '
-    ClientHeight = 62
-    ClientWidth = 300
+    ClientHeight = 58
+    ClientWidth = 296
     TabOrder = 0
     object edtDataDir: TEdit
       Left = 8
-      Height = 23
+      Height = 22
       Top = 8
       Width = 280
       TabOrder = 0
@@ -29,9 +30,9 @@ object frmSortFile: TfrmSortFile
     end
     object cbxVolumeLabel: TCheckBox
       Left = 8
-      Height = 19
+      Height = 18
       Top = 38
-      Width = 114
+      Width = 133
       Caption = 'Use Volume Label'
       OnChange = cbxVolumeLabelChange
       TabOrder = 1
@@ -43,12 +44,12 @@ object frmSortFile: TfrmSortFile
     Top = 96
     Width = 304
     Caption = ' Output FileName: '
-    ClientHeight = 38
-    ClientWidth = 300
+    ClientHeight = 34
+    ClientWidth = 296
     TabOrder = 1
     object edtOutputFileName: TEdit
       Left = 8
-      Height = 23
+      Height = 22
       Top = 8
       Width = 240
       TabOrder = 0
@@ -90,4 +91,4 @@ object frmSortFile: TfrmSortFile
     left = 208
     top = 104
   end
-end
+end
