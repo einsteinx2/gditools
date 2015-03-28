@@ -22,13 +22,13 @@ sys.path.append('.')
 from gditools import CdImage, _copy_buffered
 
 
-def bin2iso(ifile, ofile='{dirname}/{basename}.iso'):
+def bin2iso(ifile, ofile='{dirname}/{basename}.iso', length = False):
     binfile = CdImage(ifile, mode = 2352)
     ofile = ofile.format(dirname = os.path.dirname(ifile),
                          basename = os.path.splitext(os.path.basename(ifile))[0])
-    print('Reading: {} \nWriting: {}'.format(ifile,ofile))
-    with open(ofile,'wb') as of:
-        _copy_buffered(binfile,of)
+    print('Reading: {} \nWriting: {}'.format(ifile, ofile))
+    with open(ofile, 'wb') as of:
+        _copy_buffered(binfile, of, length=length)
 
 def main(argv):
     if len(argv) > 1 and os.path.isfile(argv[1]):
