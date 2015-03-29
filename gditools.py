@@ -129,7 +129,7 @@ class ISO9660(_ISO9660_orig):
         return self._gdifile.read(filerec['ex_len'])
 
 
-    def get_sorttxt(self, crit='ex_loc', prefix='data', dummy='0.0'):
+    def get_sorttxt(self, crit='ex_loc', prefix='data', dummy='0.0', spacer=1):
         """
         prefix : Folder that will be created in the pwd.
                  Default: 'data'
@@ -164,7 +164,7 @@ class ISO9660(_ISO9660_orig):
             self.get_sorted(criterion='EX_LEN')
         """
         return self._sorttxt_from_records(self._sorted_records(crit=crit),
-                                     prefix=prefix, dummy=dummy)
+                                     prefix=prefix, dummy=dummy, spacer = spacer)
 
 
     def _sorted_records(self, crit='ex_loc'):
@@ -178,17 +178,18 @@ class ISO9660(_ISO9660_orig):
         return ordered_records
 
 
-    def _sorttxt_from_records(self, records, prefix='data', dummy='0.0'):
+    def _sorttxt_from_records(self, records, prefix='data', dummy='0.0', spacer = 1):
+        spacer = int(spacer)
         sorttxt=''
         newline = '{prefix}{filename} {importance}\r\n'
         for i,f in enumerate(records):
             sorttxt += newline.format(prefix=prefix, filename=f['name'],
-                                      importance = i+1)
+                                      importance = spacer*(i+1))
         if dummy:
             if not dummy[0] == '/': 
                 dummy = '/' + dummy
             sorttxt += newline.format(prefix=prefix, filename=dummy,
-                                      importance=len(records)+1)
+                                      importance = spacer*(len(records)+1))
         return sorttxt
 
 
@@ -754,6 +755,7 @@ def _printUsage(pname='gditools.py'):
     print('  -e [filename]          Dump a single file from the filesystem')
     print('  --extract-all          Dump all the files in the *data-folder*')
     print('  --data-folder [name]   *data-folder* subfolder. Default: data')
+    print('  --sort-spacer [num]    sorttxt entries are sperated by num')
     print(' '*27 + '(__volume_label__ --> Use ISO9660 volume label)')
     print('  --silent               Minimal verbosity mode')
     print('  [no option]            Display gdi infos if not silent')
@@ -777,10 +779,12 @@ def main(argv):
     silent = False
     datafolder = 'data'
     listFiles = False
+    sort_spacer = 1
     try:
         opts, args = getopt.getopt(argv,"hli:o:s:b:e:",
                                    ['help','silent', 'list',
-                                    'extract-all','data-folder='])
+                                    'extract-all','data-folder=',
+                                    'sort-spacer='])
 
     except getopt.GetoptError:
         _printUsage(progname)
@@ -823,6 +827,8 @@ def main(argv):
             extract = '__all__'
         elif opt == '--data-folder':
             datafolder = arg
+        elif opt == '--sort-spacer':
+            sort_spacer = arg
 
     
     with GDIfile(inputfile, verbose = not silent) as gdi:
@@ -850,7 +856,7 @@ def main(argv):
             datafolder = gdi.get_volume_label()
 
         if sorttxtfile:
-            gdi.dump_sorttxt(filename=sorttxtfile, prefix=datafolder)
+            gdi.dump_sorttxt(filename=sorttxtfile, prefix=datafolder, spacer = sort_spacer)
 
         if bootsectorfile:
             gdi.dump_bootsector(filename=bootsectorfile)
