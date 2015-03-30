@@ -841,10 +841,7 @@ def main(argv):
             if outputpath[-1] == '/':
                 outputpath = outputpath[:-1]
 
-            if outputpath[0] == '/':
-                gdi._dirname = outputpath
-            else:
-                gdi._dirname = os.getcwd() + '/' + outputpath
+            gdi._dirname = os.path.abspath(outputpath)
 
             if not os.path.exists(gdi._dirname):
                 os.makedirs(gdi._dirname)   
