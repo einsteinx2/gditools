@@ -719,11 +719,11 @@ def UpdateLine(text):
     sys.stdout.flush()
 
 
-def _copy_buffered(f1, f2, length = False, bufsize = 1*1024*1024, closeOut = True):
+def _copy_buffered(f1, f2, length = None, bufsize = 1*1024*1024, closeOut = True):
     """
     Copy istream f1 into ostream f2 in bufsize chunks
     """
-    if not length:  # By default it read all the file
+    if length is None:  # By default it reads all the file
         tmp = f1.tell()
         f1.seek(0,2)
         length = f1.tell()
