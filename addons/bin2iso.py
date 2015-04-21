@@ -22,7 +22,7 @@ sys.path.append('.')
 from gditools import CdImage, _copy_buffered
 
 
-def bin2iso(ifile, ofile='{dirname}/{basename}.iso', length = False):
+def bin2iso(ifile, ofile='{dirname}/{basename}.iso', length = None):
     binfile = CdImage(ifile, mode = 2352)
     ofile = ofile.format(dirname = os.path.dirname(ifile),
                          basename = os.path.splitext(os.path.basename(ifile))[0])
