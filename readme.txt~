@@ -68,7 +68,7 @@ ___/ /_/ (_-</ _ `/ _ `/ -_)___________________________________________________
       --extract-all          Dump all the files in the *data-folder*
       --data-folder [name]   *data-folder* subfolder. Default: data
                                (__volume_label__ --> Use ISO9660 volume label)
-      --sort-spacer [num]    Sorttxt entries are sperated by num
+      --sort-spacer [num]    sorttxt entries are sperated by num
       --silent               Minimal verbosity mode
       [no option]            Display gdi infos if not silent
 

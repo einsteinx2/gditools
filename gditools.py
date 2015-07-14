@@ -5,7 +5,7 @@
     gditools, a python library to extract files, sorttxt.txt and 
     bootsector (ip.bin) from SEGA Gigabyte Disc (GD-ROM) dumps.
     
-    FamilyGuy 2014
+    FamilyGuy 2014-2015
         
     
     gditools.py and provided examples are licensed under the GNU
@@ -29,6 +29,9 @@ except ImportError:
 
 
 # TODO TODO TODO
+#
+#   - Uniformize how we create unexisting paths exists 
+#          (files/sort/bootsector/outputpath)
 #
 #   - Test extensively, find bugs and fix them?
 #
@@ -196,6 +199,15 @@ class ISO9660(_ISO9660_orig):
     def dump_sorttxt(self, filename='sorttxt.txt', **kwargs):
         if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
             filename = self._dirname + '/' + filename
+
+        path = os.path.dirname(filename)
+        if not os.path.exists(path):
+            # Creates required dirs, including empty ones
+            os.makedirs(path)   
+            if self._verbose: 
+                message = 'Created directory: {}'
+                UpdateLine(message.format(path))
+
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping sorttxt to {}'.format(filename))
@@ -204,6 +216,15 @@ class ISO9660(_ISO9660_orig):
     def dump_bootsector(self, filename='ip.bin'):
         if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
             filename = self._dirname + '/' + filename
+
+        path = os.path.dirname(filename)
+        if not os.path.exists(path):
+            # Creates required dirs, including empty ones
+            os.makedirs(path)   
+            if self._verbose: 
+                message = 'Created directory: {}'
+                UpdateLine(message.format(path))
+
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping bootsector to {}'.format(filename))
@@ -233,8 +254,8 @@ class ISO9660(_ISO9660_orig):
             # Creates required dirs, including empty ones
             os.makedirs(path)   
             if self._verbose: 
-                tmp_str = 'Created directory: {}'.format(path)
-                print(tmp_str + ' '*(80-len(tmp_str)))
+                message = 'Created directory: {}'
+                UpdateLine(message.format(path))
 
         if rec['flags'] != 2:   # If rec doesn't represents a directory
             message = 'Dumping {} to {}    ({}, {})'
@@ -756,7 +777,7 @@ def _printUsage(pname='gditools.py'):
     print('  --extract-all          Dump all the files in the *data-folder*')
     print('  --data-folder [name]   *data-folder* subfolder. Default: data')
     print(' '*27 + '(__volume_label__ --> Use ISO9660 volume label)')
-    print('  --sort-spacer [num]    sorttxt entries are sperated by num')
+    print('  --sort-spacer [num]    Sorttxt entries are sperated by num')
     print('  --silent               Minimal verbosity mode')
     print('  [no option]            Display gdi infos if not silent')
     print('\n')
