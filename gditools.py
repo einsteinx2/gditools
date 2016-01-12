@@ -55,6 +55,8 @@ class ISO9660(_ISO9660_orig):
         if len(args) > 1:
             if type(args[1]) == type({}):
                 self._dict2 = args[1]
+                
+        self._last_read_toc_sector = 0  # Last read TOC sector *SO FAR*
 
         self._gdifile = AppendedFiles(self._dict1, self._dict2)
 
@@ -71,9 +73,18 @@ class ISO9660(_ISO9660_orig):
     
     def _get_sector_file(self, sector, length): 
         # A big performance improvement versus re-opening the file for each
-	# read as in the original ISO9660 implementation.
+	    # read as in the original ISO9660 implementation.
         self._gdifile.seek(sector*2048)
         self._buff = StringIO(self._gdifile.read(length))
+
+    def _unpack_record(self, read=0):
+        tmp = _ISO9660_orig._unpack_record(self, read)
+        current_pointer_pos = self._gdifile.tell()/2048
+        if current_pointer_pos > self._last_read_toc_sector:
+            self._last_read_toc_sector = current_pointer_pos
+            
+        return tmp
+        
 
 
     ### NEW FUNCTIONS FOLLOW ###
