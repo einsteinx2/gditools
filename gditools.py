@@ -365,15 +365,25 @@ class CdImage(file):
     Class that allows opening a 2352 or 2048 bytes/sector data cd track
     as a 2048 bytes/sector one.
     """
-    def __init__(self, filename, mode = 'auto', *args, **kwargs):
+    def __init__(self, filename, mode = 'auto', manualRawOffset=0, *args, **kwargs):
 
         if mode == 'auto':
             if filename[-4:] == '.iso': mode = 2048
             elif filename[-4:] == '.bin': mode = 2352
 
-        elif not mode in [2048, 2352]:
+        elif not mode in [2048, 2352, 2336]:
             raise ValueError('Argument mode should be either 2048 or 2352')
         self.__mode = mode
+        
+        if mode == 2352:
+            self._sectorOffset = 16
+            self._skipToNext = 304
+            
+        elif mode == 2336:
+            self._sectorOffset = 8
+            self._skipToNext = 288
+            
+        self.__manualRawOffset = manualRawOffset
 
         if (len(args) > 0) and (args[0] not in ['r','rb']):
             raise NotImplementedError('Only read mode is implemented.')
@@ -381,8 +391,8 @@ class CdImage(file):
         file.__init__(self, filename, 'rb')
 
         file.seek(self,0,2)
-        if self.__mode == 2352:
-            self.length = file.tell(self) * 2048/2352
+        if self.__mode in [2352, 2336]:
+            self.length = file.tell(self) * 2048/self.__mode
         else:
             self.length = file.tell(self)
         file.seek(self,0,0)
@@ -390,13 +400,13 @@ class CdImage(file):
         self.seek(0)
 
     def realOffset(self,a):
-        return a/2048*2352 + a%2048 + 16
+        return a/2048*self.__mode + a%2048 + self._sectorOffset + self.__manualRawOffset
 
     def seek(self, a, b = 0):
         if self.__mode == 2048:
             file.seek(self, a, b)
 
-        elif self.__mode == 2352:
+        elif self.__mode in [2352, 2336]:
             if b == 0:
                 self.binpointer = a
             if b == 1:
@@ -411,7 +421,7 @@ class CdImage(file):
         if self.__mode == 2048:
             return file.read(self, length)
 
-        elif self.__mode == 2352:
+        elif self.__mode in [2352, 2336]:
             if length == None:
                 length = self.length - self.binpointer
 
@@ -426,11 +436,11 @@ class CdImage(file):
             # The first read can be < 2048 bytes
             data = buff.read(tmp)
             length -= tmp
-            buff.seek(304, 1)
+            buff.seek(self._skipToNext, 1)
             # The middle reads are all 2048 so we optimize here!
             for i in xrange(length / 2048):
                 data += buff.read(2048)
-                buff.seek(304, 1)
+                buff.seek(self._skipToNext, 1)
             # The last read can be < 2048 bytes
             data += buff.read(length % 2048)
             # Seek back to where we should be
@@ -441,7 +451,7 @@ class CdImage(file):
         if self.__mode == 2048:
             return file.tell(self)
 
-        elif self.__mode == 2352:
+        elif self.__mode in [2352, 2336]:
             return self.binpointer
 
 
