@@ -297,7 +297,7 @@ class ISO9660(_ISO9660_orig):
         if not target[0] == '/': # Paths rel. to gdi folder unless full paths
             target = self._dirname + '/' + target
         try:
-            for i in self._sorted_records(crit='ex_loc'):
+            for i in self._sorted_records(crit='EX_LOC'):
                 self.dump_file_by_record(i, target = target, **kwargs)
 
             if self._verbose:
