@@ -224,7 +224,7 @@ class ISO9660(_ISO9660_orig):
                 print('Dumping sorttxt to {}'.format(filename))
             f.write(self.get_sorttxt(**kwargs))
 
-    def dump_bootsector(self, filename='ip.bin'):
+    def dump_bootsector(self, filename='ip.bin', **kwargs):
         if not filename[0] == '/': # Paths rel. to gdi folder unless full paths
             filename = self._dirname + '/' + filename
 
@@ -239,7 +239,7 @@ class ISO9660(_ISO9660_orig):
         with open(filename, 'wb') as f:
             if self._verbose: 
                 print('Dumping bootsector to {}'.format(filename))
-            f.write(self.get_bootsector())
+            f.write(self.get_bootsector(**kwargs))
 
     def dump_file_by_record(self, rec, target = '.', keep_timestamp = True,
                             filename = None):
@@ -297,7 +297,7 @@ class ISO9660(_ISO9660_orig):
         if not target[0] == '/': # Paths rel. to gdi folder unless full paths
             target = self._dirname + '/' + target
         try:
-            for i in self._sorted_records(crit='EX_LOC'):
+            for i in self._sorted_records(crit='ex_loc'):
                 self.dump_file_by_record(i, target = target, **kwargs)
 
             if self._verbose:
