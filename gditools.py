@@ -47,14 +47,15 @@ class ISO9660(_ISO9660_orig):
     
     ### Overriding Functions of original class in this section
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, gdi, *args, **kwargs):
         # We obviously override the init to add support for our modifications
-        self._dict1 = args[0]
+        self._gdi = gdi
+
+        self._dict1 = [i for i in gdi if i['lba']==45000][0] # That's ugly but it works
         self._dirname = os.path.dirname(self._dict1['filename'])
         self._dict2 = None
-        if len(args) > 1:
-            if type(args[1]) == type({}):
-                self._dict2 = args[1]
+        if len(gdi) > self._dict1['tnum']:
+                self._dict2 = gdi[-1]
                 
         self._last_read_toc_sector = 0  # Last read TOC sector *SO FAR*
 
@@ -363,7 +364,7 @@ class GDIfile(ISO9660):
     """
     def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
         verbose = kwargs['verbose'] if kwargs.has_key('verbose') else False 
-        ISO9660.__init__(self, *parse_gdi(filename, verbose=verbose), **kwargs)
+        ISO9660.__init__(self, parse_gdi(filename, verbose=verbose), **kwargs)
 
     def __enter__(self):
         return self
@@ -711,12 +712,9 @@ class AppendedFiles():
 
 
 
-def parse_gdi(filename, verbose = False):
+def parse_gdi(filename, verbose=False):
     filename = os.path.realpath(filename)
     dirname = os.path.dirname(filename)
-    a = dict(offset = 45000*2048, wormhole = [0, 45000*2048, 32*2048])
-    # Using 32 instead of 19 to be sure to include pvd and svd
-    # track03 always have these offsets and wormhole
 
     with open(filename) as f: # if i.split() removes blank lines
         l = [i.split() for i in f.readlines() if i.split()]
@@ -724,35 +722,44 @@ def parse_gdi(filename, verbose = False):
         raise AssertionError('Invalid gdi file: track03 LBA should be 45000')
 
     nbt = int(l[0][0])
-    a['filename'] = dirname + '/' + l[3][4]
-    a['mode'] = int(l[3][3])
+
+    gdi = [dict(filename=dirname + '/' + t[4], mode=int(t[3]), tnum=int(t[0]), lba=int(t[1]), 
+                ttype='audio' if t[2]=='0' else 'data' if t[2]=='4' else 'unknown') 
+                for t in l[1:]]
+
+    gdi[2]['offset'] = 45000*2048
+    gdi[2]['wormhole'] = [0, 45000*2048, 32*2048]
 
     if nbt > 3:
-        b = dict(filename=dirname + '/' + l[nbt][4], mode=int(l[nbt][3]),
-                 offset = 2048*(int(l[nbt][1]) - 
-                     (45000 + (get_filesize(a['filename'])/int(a['mode'])))) )
-        ret = a,b
-    else:
-        ret = a,
+        gdi[nbt-1]['offset'] = 2048*(gdi[nbt-1]['lba'] - get_filesize(gdi[2]['filename'])/gdi[2]['mode'] - 45000)
 
     if verbose:
         print('\nParsed gdi file: {}'.format(os.path.basename(filename)))
         print('Base Directory:  {}'.format(dirname))
         print('Number of tracks:  {}'.format(nbt))
-        for i,j in enumerate(ret):
-            print('')
-            print('{} track:'.format('DATA' if i==1 or len(ret)==1 else 'TOC'))
-            print('\tFilename:  {}'.format(os.path.basename(j['filename'])))
-            print('\tLBA:       {} '.format(l[3][1] if i == 0 else l[nbt][1]))
-            print('\tMode:      {} bytes/sector'.format(j['mode']))
-            print('\tOffset:    {}'.format(j['offset']/2048))
-            if j.has_key('wormhole'):
-                wh = [k/2048 for k in j['wormhole']]
+        for j in gdi:
+            if j['ttype'] == 'data':
+                if j['tnum']==1:
+                    tlabel = 'PC DATA'
+                elif j['tnum']==nbt:
+                    tlabel = 'GAME DATA'
+                else:
+                    tlabel = 'TOC'
             else:
-                wh = 'None'
-            print('\tWormHole:  {}\n'.format(wh))
-    
-    return ret
+                tlabel = 'AUDIO'
+            print('\nLOW-DENSITY:\n' if j['tnum']==1 else '\nHIGH-DENSITY:\n' if j['tnum']==3 else '')
+            print('    {} track:'.format(tlabel))
+            print('        Filename:  {}'.format(os.path.basename(j['filename'])))
+            print('        LBA:       {} '.format(j['lba']))
+            print('        Mode:      {} bytes/sector'.format(j['mode']))
+            if j.has_key('offset'):
+                print('        Offset:    {}'.format(j['offset']/2048))
+            if j.has_key('wormhole'):
+                print('        WormHole:  {}'.format([k/2048 for k in j['wormhole']]))
+        print('')
+ 
+    return gdi
+
 
 
 def get_filesize(filename):
