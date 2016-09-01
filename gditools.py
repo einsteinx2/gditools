@@ -79,7 +79,13 @@ class ISO9660(_ISO9660_orig):
 
     def _unpack_record(self, read=0):
         tmp = _ISO9660_orig._unpack_record(self, read)
-        current_pointer_pos = self._gdifile.tell()/2048
+        pointer = self._gdifile.tell()
+        # Where are we in sectors?
+        current_pointer_pos = pointer//2048
+        # If we're not at the exact beginning of a sector, we add one.
+        if pointer%2048:
+            current_pointer_pos += 1
+
         if current_pointer_pos > self._last_read_toc_sector:
             self._last_read_toc_sector = current_pointer_pos
             
@@ -332,6 +338,15 @@ class ISO9660(_ISO9660_orig):
         # timez: Offset from GMT in 15 min intervals converted to secs
         T = (datetime(*t)-epoch).total_seconds()
         return T - timez
+
+
+    def get_last_toc_sector(self):
+        # Parsing the whole TOC to find the last accessed sector.
+        tmp = map(None, self.tree(), self.tree(get_files=False))
+        return self._last_read_toc_sector
+
+    def get_first_file_sector(self):
+        return self._sorted_records()[-1]['ex_loc']
 
 
 
