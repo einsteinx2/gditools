@@ -365,6 +365,7 @@ class GDIfile(ISO9660):
     def __init__(self, filename, **kwargs): # Isn't OO programming wonderful?
         verbose = kwargs['verbose'] if kwargs.has_key('verbose') else False 
         ISO9660.__init__(self, parse_gdi(filename, verbose=verbose), **kwargs)
+        self._gdi_filename = filename
 
     def __enter__(self):
         return self
