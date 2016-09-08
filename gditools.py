@@ -692,7 +692,7 @@ class AppendedFiles():
         self.seek(FutureOffset) # It might be enough to just update 
                                 # self.MetaPointer, but this is safer.
         return data
-            
+
 
     def tell(self):
         return self.MetaPointer
@@ -709,6 +709,32 @@ class AppendedFiles():
         self._f1.__exit__()
         if self._f2_len:
             self._f2.__exit__()
+
+
+class GDIshrink():
+    """
+    Shrinks gdi, hopefully.
+    """
+    def __init__(self, gdifile):
+        if isinstance(gdifile, GDIfile):
+            self.gdi_ori = gdifile._gdi
+        elif isinstance(gdifile, str):
+            self.gdi_orig = parse_gdi(gdifile)
+        else raise TypeError('gdifile must be a GDIfile instance or a string pointing to a valid gdi file')
+
+
+    def backup_gdi(self, folder):
+        pass
+
+
+    def gen_new_gdifile(self, folder):
+        pass
+
+
+    def shrink_data_trakcs(self):
+        pass
+    
+            
 
 
 
@@ -806,6 +832,7 @@ def _copy_buffered(f1, f2, length = None, bufsize = 1*1024*1024, closeOut = True
 
     if closeOut:
         f2.close()
+
 
 
 def _printUsage(pname='gditools.py'):
