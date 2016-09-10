@@ -379,7 +379,7 @@ class GDIfile(ISO9660):
 
 class CdImage(file):
     """
-    Class that allows opening a 2352 or 2048 bytes/sector data cd track
+    Class that allows opening a 2352, 2336 or 2048 bytes/sector data cd track
     as a 2048 bytes/sector one.
     """
     def __init__(self, filename, mode = 'auto', manualRawOffset=0, *args, **kwargs):
@@ -721,7 +721,8 @@ class GDIshrink():
             self.gdi_ori = gdifile._gdi
         elif isinstance(gdifile, str):
             self.gdi_orig = parse_gdi(gdifile)
-        else raise TypeError('gdifile must be a GDIfile instance or a string pointing to a valid gdi file')
+        else:
+            raise TypeError('gdifile must be a GDIfile instance or a string pointing to a valid gdi file')
 
 
     def backup_gdi(self, folder):
