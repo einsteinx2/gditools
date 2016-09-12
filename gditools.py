@@ -736,15 +736,17 @@ class GDIshrink():
         if tmp > 3:
             tracks.append(self.gdi_orig[tmp])
 
-        f_to_bak = [t['filename'] for t in tracks]
-        f_to_bak.append(self.gdi_filename)
+        bakfiles = [t['filename'] for t in tracks]
+        bakfiles.append(self.gdi_filename)
 
-        for i in f_to_bak:
+        for i in bakfiles:
             os.rename(i, i+'.bak')
             
         # Updating the parsed gdi to allow reading from backup
         for i in tracks:
             i['filename'] += '.bak'
+
+        self.bakfiles = [i+'.bak' for i in bakfiles]
 
 
 
@@ -752,8 +754,17 @@ class GDIshrink():
         pass
 
 
-    def shrink_data_trakcs(self):
+    def shrink_trakcs(self):
         pass
+
+
+    def clean_backup(self):
+        """
+        Deleting the previously backed up files.
+        """
+        for i in self.bakfiles:
+            os.remove(i)
+
     
             
 
