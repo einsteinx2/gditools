@@ -718,15 +718,34 @@ class GDIshrink():
     """
     def __init__(self, gdifile):
         if isinstance(gdifile, GDIfile):
-            self.gdi_ori = gdifile._gdi
+            self.gdi_orig = gdifile._gdi
+            self.gdi_filename = gdifile._gdi_filename
         elif isinstance(gdifile, str):
             self.gdi_orig = parse_gdi(gdifile)
+            self.gdi_filename = gdifile
         else:
             raise TypeError('gdifile must be a GDIfile instance or a string pointing to a valid gdi file')
 
+        self.basedir = os.path.dirname(self.gdi_filename)
 
-    def backup_gdi(self, folder):
-        pass
+
+    def backup_gdi(self):
+        # We backup tracks 1, 2, 3 and the last one
+        tracks = self.gdi_orig[:3]
+        tmp = len(self.gdi_orig)
+        if tmp > 3:
+            tracks.append(self.gdi_orig[tmp])
+
+        f_to_bak = [t['filename'] for t in tracks]
+        f_to_bak.append(self.gdi_filename)
+
+        for i in f_to_bak:
+            os.rename(i, i+'.bak')
+            
+        # Updating the parsed gdi to allow reading from backup
+        for i in tracks:
+            i['filename'] += '.bak'
+
 
 
     def gen_new_gdifile(self, folder):
