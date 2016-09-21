@@ -741,12 +741,17 @@ class GDIshrink():
 
         for i in bakfiles:
             os.rename(i, i+'.bak')
-            
-        # Updating the parsed gdi to allow reading from backup
-        for i in tracks:
-            i['filename'] += '.bak'
 
         self.bakfiles = [i+'.bak' for i in bakfiles]
+            
+        # Backed up tracks dict to allow reading from backup
+        baktracks = list(tracks)  # Copies it
+        for i in baktracks:
+            i['filename'] += '.bak'
+
+        self.baktracks = baktracks
+        
+        
 
 
 
@@ -754,7 +759,7 @@ class GDIshrink():
         pass
 
 
-    def shrink_trakcs(self):
+    def shrink_tracks(self):
         pass
 
 
