@@ -740,19 +740,17 @@ class GDIshrink():
         bakfiles.append(self.gdi_filename)
 
         for i in bakfiles:
-            os.rename(i, i+'.bak')
+            os.rename(i, i+'.bak')  # The backup itself
 
         self.bakfiles = [i+'.bak' for i in bakfiles]
             
         # Backed up tracks dict to allow reading from backup
-        baktracks = list(tracks)  # Copies it
+        baktracks = [dict(i) for i in tracks] # Copies it
         for i in baktracks:
             i['filename'] += '.bak'
 
         self.baktracks = baktracks
         
-        
-
 
 
     def gen_new_gdifile(self, folder):
