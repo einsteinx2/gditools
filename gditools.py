@@ -720,9 +720,11 @@ class GDIshrink():
         if isinstance(gdifile, GDIfile):
             self.gdi_orig = gdifile._gdi
             self.gdi_filename = gdifile._gdi_filename
+            self.gdifile = gdifile
         elif isinstance(gdifile, str):
             self.gdi_orig = parse_gdi(gdifile)
             self.gdi_filename = gdifile
+            self.gdifile = GDIfile(gdifile)
         else:
             raise TypeError('gdifile must be a GDIfile instance or a string pointing to a valid gdi file')
 
@@ -767,10 +769,21 @@ class GDIshrink():
         return newTracks
 
     def gen_new_gdifile(self):
+        gdiline = '{tnum} {lba} {tracktype} {mode} {fname} {zero}\n'
         tracks = self.gen_new_gdidict()
         s = str(len(tracks))+'\n'
         for t in tracks:
-            s += '{tnum} {lba} {tracktype} {mode} {fname} {zero}\n'.format(**t)
+            s += gdiline.format(**t)
+
+        if len(tracks) == 3:
+            s += gdiline.format(
+                    tnum = 4, 
+                    lba = self.gdifile.get_first_file_sector(),
+                    tracktype = 4,
+                    mode = 2048,
+                    fname = 'track04.iso',
+                    zero = 0)
+
         return s
 
     def write_new_gdifile(self, folder=None, filename='disc.gdi'):
