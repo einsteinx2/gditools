@@ -753,19 +753,33 @@ class GDIshrink():
 
         self.baktracks = baktracks
 
+    def unbackup_dir(self):
+        pass
+
 
     def gen_new_gdidict(self):
         oldTracks = self.gdi_orig[2:] # We will replace LD tracks by dummy ones
         newTracks = [dict(tnum=1, lba=0, tracktype=4, mode=2048, fname='track01.iso', zero=0),
                      dict(tnum=2, lba=302, tracktype=0, mode=2352, fname='track02.raw', zero=0)]
         for i,t in enumerate(oldTracks):
+            bname = os.path.basename(t['filename'])
             newTracks.append(dict(
                 tnum = i+3, 
                 lba = t['lba'], 
                 tracktype = 4 if t['ttype']=='data' else 0,
                 mode = 2048, # We're shrinking -> it'll always be 2048
-                fname = 'track{:02d}.{:s}'.format(i+3, 'iso' if t['ttype']=='data' else 'raw'),
+                fname = bname if t['ttype']=='audio' else os.path.splitext(bname)[0]+'.iso',
                 zero = 0))
+
+        if len(newTracks) == 3:
+            newTracks.append(dict(
+                tnum = 4, 
+                lba = self.gdifile.get_first_file_sector(),
+                tracktype = 4,
+                mode = 2048,
+                fname = 'track04.iso',
+                zero = 0))
+                
         return newTracks
 
     def gen_new_gdifile(self):
@@ -774,15 +788,6 @@ class GDIshrink():
         s = str(len(tracks))+'\n'
         for t in tracks:
             s += gdiline.format(**t)
-
-        if len(tracks) == 3:
-            s += gdiline.format(
-                    tnum = 4, 
-                    lba = self.gdifile.get_first_file_sector(),
-                    tracktype = 4,
-                    mode = 2048,
-                    fname = 'track04.iso',
-                    zero = 0)
 
         return s
 
@@ -813,7 +818,7 @@ class GDIshrink():
     def getDummyDataTrack(self):
         from zlib import decompress
         from base64 import b64decode
-        # It's compressed twice because it makes it smaller/prettier, really... I know...
+        # Compressed twice to make it smaller/prettier... really... I know it shouldn't...
         return decompress(decompress(b64decode('eNqruPX29um8yw4iDBc8b7qI7maKNUpyFV8iHO41ZelTn+DpFo6FShP5H27/sekf8xFdRkfvyI8BFu7bju8r/jvJTersCT5GBvzgRejlKW17DdaLz/7+8fmy2ctu2gXt33/v+Psu93e7o3eZfvn98IdeSc2ntb8qt1eK+r3v83Per/3r4eGLk5efj7sn8/Z8/5/QzXtW3E69O2WzTLl1oZHU0s+rT5vFXft8J+92aV7S1lNPq3Z2rV+92WKOj16SXM702Udzos59trOoC15i0nW9uXxnzNbTR39+XbB23auf60LP5RXveqWXLrP65avcvX2vY8zq/5R2m8gsV4rl6U76rqN59w73EvmWakmpt//9lh+2f3x5+j95oCcsYvbetix7XA9ivvlY/2LfemOwv9nfXP9/w3bOR6WaswblDKOAWHAg/7tkxo8DNwGBZqUF')))
         
 
