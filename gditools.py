@@ -843,9 +843,9 @@ def gdishrink(filename, opath=None):
     with GDIfile(filename) as gdi:
         itracks = gdi._gdi
         numtraks = len(itracks)
-        
         first_file_sector = gdi.get_first_file_sector()
         last_toc_sector = gdi.get_last_toc_sector()
+        #TODO: store bootbin in memory as a sanity check for later
 
     # 2- We plan the new tracks, considering 3tracks or 5+tracks dumps
     otracks = deepcopy(itracks) # New tracks
@@ -876,6 +876,7 @@ def gdishrink(filename, opath=None):
 
     # 5- We dump the proper GDI file for the shrinked dump
     #TODO: Generating and dumping the gdi file
+    #TODO: Sanity check: read bootbin and compare to original one
 
     # 6- Post-shrinking cleaning
     # TODO: Remove the backup files if need be, maybe controlled via a kwarg
