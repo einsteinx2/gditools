@@ -18,7 +18,8 @@
     provided in the licences folder: iso9660_licente.txt
 """
 
-import os, sys, getopt
+import os, sys, shutil, getopt
+from copy import deepcopy
 from iso9660 import ISO9660 as _ISO9660_orig
 from struct import unpack
 from datetime import datetime
@@ -753,7 +754,7 @@ class GDIshrink():
 
         self.baktracks = baktracks
 
-    def unbackup_dir(self):
+    def restore_backup_gdi(self):
         pass
 
 
@@ -820,7 +821,108 @@ class GDIshrink():
         from base64 import b64decode
         # Compressed twice to make it smaller/prettier... really... I know it shouldn't...
         return decompress(decompress(b64decode('eNqruPX29um8yw4iDBc8b7qI7maKNUpyFV8iHO41ZelTn+DpFo6FShP5H27/sekf8xFdRkfvyI8BFu7bju8r/jvJTersCT5GBvzgRejlKW17DdaLz/7+8fmy2ctu2gXt33/v+Psu93e7o3eZfvn98IdeSc2ntb8qt1eK+r3v83Per/3r4eGLk5efj7sn8/Z8/5/QzXtW3E69O2WzTLl1oZHU0s+rT5vFXft8J+92aV7S1lNPq3Z2rV+92WKOj16SXM702Udzos59trOoC15i0nW9uXxnzNbTR39+XbB23auf60LP5RXveqWXLrP65avcvX2vY8zq/5R2m8gsV4rl6U76rqN59w73EvmWakmpt//9lh+2f3x5+j95oCcsYvbetix7XA9ivvlY/2LfemOwv9nfXP9/w3bOR6WaswblDKOAWHAg/7tkxo8DNwGBZqUF')))
+
+
+def gdishrink(filename, opath=None):
+    """
+    Function to shrink a GDI.
+
+    *filename* should point to a valid gdi file with all tracks in the same folder.
+    default output path *opath* in the same as the input one.
+    """
+    # 1- Managing filenames and input GDI infos
+    absname = os.path.abspath(filename)
+    basedir = os.path.dirname(absname)
+    basename = os.path.basename(filename)
+
+    if opath is None:
+        opath = basedir
+    else:
+        opath = os.path.abspath(opath)
+
+    with GDIfile(filename) as gdi:
+        itracks = gdi._gdi
+        numtraks = len(itracks)
         
+        first_file_sector = gdi.get_first_file_sector()
+        last_toc_sector = gdi.get_last_toc_sector()
+
+    # 2- We plan the new tracks, considering 3tracks or 5+tracks dumps
+    otracks = deepcopy(itracks) # New tracks
+    for i in [0,2,-1]:  # 1,3,last tracks: simpler than checking the number of tracks
+        otracks[i]['mode'] = 2048
+        otracks[i]['filename'] = otracks[i]['filename'].replace('.bin', '.iso')
+    if numtraks==3:
+        d = dict(
+                filename = os.path.join(basedir,'track04.iso'),
+                lba = first_file_sector,
+                mode = 2048,
+                offset = 2048*(first_file_sector - last_toc_sector),    # Untested as of 2017-10-16
+                tnum = 4,
+                ttype = 'data'
+                )
+        otracks = otracks+[d]
+
+    # 3- If we shrink in-folder, we backup everything in case it goes south
+    if os.path.abspath(opath)==basedir:
+        backup_files([absname]+[t['filename'] for t in itracks])
+        # Track list now point to backup files
+        for t in itracks:
+            t['filename'] += '.bak'
+
+    # 4- We copy the relevent data from input tracks to output tracks
+    #TODO: The actual copying of track01, track03 and last-track/track04
+    #TODO: Generating dummy files for track01 and track02
+
+    # 5- We dump the proper GDI file for the shrinked dump
+    #TODO: Generating and dumping the gdi file
+
+    # 6- Post-shrinking cleaning
+    # TODO: Remove the backup files if need be, maybe controlled via a kwarg
+
+    return itracks, otracks # For testing, should be removed once shrinking works fine
+
+
+def backup_files(files, verbose=True):
+    """
+    Backups *files*, appending '.bak' to the filenames.
+    Never overwrites a previous backup.
+    """
+    if not isinstance(files, list):
+        files = [files]
+    for f in files:
+        f = os.path.abspath(f)
+        if not os.path.isfile(f+'.bak'):
+            shutil.move(f, f+'.bak')
+        else:
+            if verbose: print("warning: backup file '{}.bak' already exists; backup skipped".format(f))
+
+def restore_backup(bakfiles, verbose=True):
+    """
+    Restores files, removing the last 4 chars (that should be '.bak').
+    Always overwrites target file if present.
+    """
+    if not isinstance(bakfiles, list):
+        bakfiles = [bakfiles]
+    for f in bakfiles:
+        if not f[-4:] == '.bak':
+            raise NameError("Backup file ({}) should end in '.bak' ".format(f))
+        f = os.path.abspath(f)
+        if os.path.isfile(f[:-4]):
+            if verbose: print("warning: file '{} is being overwritten by backup".format(f[:-4]))
+        shutil.move(f, f[:-4])
+
+
+def getDummyAudioTrack(self):
+    return '\x00'*300*2352
+
+def getDummyDataTrack(self):
+    from zlib import decompress
+    from base64 import b64decode
+    # Compressed twice to make it smaller/prettier... really... I know it shouldn't...
+    return decompress(decompress(b64decode('eNqruPX29um8yw4iDBc8b7qI7maKNUpyFV8iHO41ZelTn+DpFo6FShP5H27/sekf8xFdRkfvyI8BFu7bju8r/jvJTersCT5GBvzgRejlKW17DdaLz/7+8fmy2ctu2gXt33/v+Psu93e7o3eZfvn98IdeSc2ntb8qt1eK+r3v83Per/3r4eGLk5efj7sn8/Z8/5/QzXtW3E69O2WzTLl1oZHU0s+rT5vFXft8J+92aV7S1lNPq3Z2rV+92WKOj16SXM702Udzos59trOoC15i0nW9uXxnzNbTR39+XbB23auf60LP5RXveqWXLrP65avcvX2vY8zq/5R2m8gsV4rl6U76rqN59w73EvmWakmpt//9lh+2f3x5+j95oCcsYvbetix7XA9ivvlY/2LfemOwv9nfXP9/w3bOR6WaswblDKOAWHAg/7tkxo8DNwGBZqUF')))
+    
+
 
 
 def parse_gdi(filename, verbose=False):
