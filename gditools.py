@@ -348,8 +348,19 @@ class ISO9660(_ISO9660_orig):
         return self._last_read_toc_sector
 
     def get_first_file_sector(self):
-        return self._sorted_records()[-1]['ex_loc']
+        # Some FS include DA tracks in their FS, it should be ignored here
+        i=-1
+        lba = self._sorted_records()[i]['ex_loc']
+        while lba < self._gdi[-1]['lba']:
+            i -= 1
+            lba = self._sorted_records()[i]['ex_loc']
+        return lba
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type=None, value=None, traceback=None):
+        self._gdifile.__exit__()
 
 
 class GDIfile(ISO9660): 
@@ -823,38 +834,40 @@ class GDIshrink():
         return decompress(decompress(b64decode('eNqruPX29um8yw4iDBc8b7qI7maKNUpyFV8iHO41ZelTn+DpFo6FShP5H27/sekf8xFdRkfvyI8BFu7bju8r/jvJTersCT5GBvzgRejlKW17DdaLz/7+8fmy2ctu2gXt33/v+Psu93e7o3eZfvn98IdeSc2ntb8qt1eK+r3v83Per/3r4eGLk5efj7sn8/Z8/5/QzXtW3E69O2WzTLl1oZHU0s+rT5vFXft8J+92aV7S1lNPq3Z2rV+92WKOj16SXM702Udzos59trOoC15i0nW9uXxnzNbTR39+XbB23auf60LP5RXveqWXLrP65avcvX2vY8zq/5R2m8gsV4rl6U76rqN59w73EvmWakmpt//9lh+2f3x5+j95oCcsYvbetix7XA9ivvlY/2LfemOwv9nfXP9/w3bOR6WaswblDKOAWHAg/7tkxo8DNwGBZqUF')))
 
 
-def gdishrink(filename, opath=None):
+def gdishrink(filename, odir=None, erase_bak=False):
     """
     Function to shrink a GDI.
 
     *filename* should point to a valid gdi file with all tracks in the same folder.
-    default output path *opath* in the same as the input one.
+    default output path *odir* in the same as the input one.
     """
     # 1- Managing filenames and input GDI infos
     absname = os.path.abspath(filename)
     basedir = os.path.dirname(absname)
     basename = os.path.basename(filename)
 
-    if opath is None:
-        opath = basedir
+    if odir is None:
+        odir = basedir
     else:
-        opath = os.path.abspath(opath)
+        odir = os.path.abspath(odir)
 
-    with GDIfile(filename) as gdi:
+    with GDIfile(absname) as gdi:
         itracks = gdi._gdi
         numtraks = len(itracks)
         first_file_sector = gdi.get_first_file_sector()
         last_toc_sector = gdi.get_last_toc_sector()
-        #TODO: store bootbin in memory as a sanity check for later
+        sanity_check_file_A = gdi.get_file_by_record(gdi._sorted_records(crit='ex_loc')[0])
 
     # 2- We plan the new tracks, considering 3tracks or 5+tracks dumps
     otracks = deepcopy(itracks) # New tracks
+    for t in otracks:
+        t['filename'] = t['filename'].replace(basedir, odir)
     for i in [0,2,-1]:  # 1,3,last tracks: simpler than checking the number of tracks
         otracks[i]['mode'] = 2048
         otracks[i]['filename'] = otracks[i]['filename'].replace('.bin', '.iso')
     if numtraks==3:
         d = dict(
-                filename = os.path.join(basedir,'track04.iso'),
+                filename = os.path.join(odir,'track04.iso'),
                 lba = first_file_sector,
                 mode = 2048,
                 offset = 2048*(first_file_sector - last_toc_sector),    # Untested as of 2017-10-16
@@ -862,29 +875,83 @@ def gdishrink(filename, opath=None):
                 ttype = 'data'
                 )
         otracks = otracks+[d]
+    else:
+        otracks[-1]['offset'] = 2048*(first_file_sector - last_toc_sector)
+        otracks[-1]['lba'] = first_file_sector
 
     # 3- If we shrink in-folder, we backup everything in case it goes south
-    if os.path.abspath(opath)==basedir:
-        backup_files([absname]+[t['filename'] for t in itracks])
+    if odir==basedir:
+        itracks_bak = itracks[:3] 
+        if numtraks > 3:
+            itracks_bak = itracks_bak + itracks[-1]
+        backup_files([absname]+[t['filename'] for t in itracks_bak])
         # Track list now point to backup files
-        for t in itracks:
+        for t in itracks_bak:
             t['filename'] += '.bak'
 
     # 4- We copy the relevent data from input tracks to output tracks
-    #TODO: The actual copying of track01, track03 and last-track/track04
-    #TODO: Generating dummy files for track01 and track02
+    # *** THIS IS WHERE THE SHRINKING REALLY HAPPENS ***
+    # TRACK03
+    with ISO9660(itracks) as gdi, open(otracks[2]['filename'], 'wb') as ofile:
+       gdifile = gdi._gdifile
+       begin_offset = otracks[2]['lba']*2048
+       length = last_toc_sector*2048 - begin_offset
+       gdifile.seek(begin_offset)
+       _copy_buffered(gdifile, ofile, length=length)
+    # LAST TRACK
+    with ISO9660(itracks) as gdi, open(otracks[-1]['filename'], 'wb') as ofile:
+       gdifile = gdi._gdifile
+       begin_offset = first_file_sector*2048
+       gdifile.seek(begin_offset)
+       _copy_buffered(gdifile, ofile, length=None) # Until the end
+       
+    # 5- Dummy and untouched tracks
+    # Generating dummy files for track01 and track02
+    # TRACK01
+    with open(otracks[0]['filename'], 'wb') as ofile:
+        ofile.write(getDummyDataTrack())
+    # TRACK02
+    with open(otracks[1]['filename'], 'wb') as ofile:
+        ofile.write(getDummyAudioTrack())
+    # Moving the HD-area audio tracks too if they exist
+    if numtraks > 3:
+        for iat, oat in zip(itracks, otracks)[3:-1]:    # Only the 2de session audio tracks
+            if not os.path.isfile(oat['filename']):
+                shutil.copy2(iat['filename'], oat['filename'])
 
     # 5- We dump the proper GDI file for the shrinked dump
-    #TODO: Generating and dumping the gdi file
-    #TODO: Sanity check: read bootbin and compare to original one
-
+    ofilename = os.path.join(odir, basename)
+    with open(ofilename, 'wb') as f:
+        f.write(gen_new_gdifile(otracks))
+    # SANITY CHECK
+    with GDIfile(ofilename) as gdi:
+        sanity_check_file_B = gdi.get_file_by_record(gdi._sorted_records(crit='ex_loc')[0])
+    if not sanity_check_file_A == sanity_check_file_B:
+        raise AssertionError('Filesystem of the shrinked gdi is inconsistent. Cleaning skipped.')
+    
     # 6- Post-shrinking cleaning
-    # TODO: Remove the backup files if need be, maybe controlled via a kwarg
-
+    if odir==basedir and erase_bak:
+        erase_backup([absname+'.bak']+[t['filename'] for t in itracks_bak])
+        
     return itracks, otracks # For testing, should be removed once shrinking works fine
 
 
-def backup_files(files, verbose=True):
+def gen_new_gdifile(_tracks):
+    tracks = deepcopy(_tracks)
+    gdiline = '{tnum} {lba} {tracktype} {mode} {fname} {zero}\n'
+    s = str(len(tracks))+'\n'
+    for i,t in enumerate(tracks):
+        pass
+    for t in tracks:
+        s += gdiline.format(
+                tracktype= 4 if t['ttype']=='data' else 0, 
+                fname=os.path.basename(t['filename']), 
+                zero=0, 
+                **t)
+    return s
+
+
+def backup_files(files, verbose=False):
     """
     Backups *files*, appending '.bak' to the filenames.
     Never overwrites a previous backup.
@@ -898,7 +965,8 @@ def backup_files(files, verbose=True):
         else:
             if verbose: print("warning: backup file '{}.bak' already exists; backup skipped".format(f))
 
-def restore_backup(bakfiles, verbose=True):
+
+def restore_backup(bakfiles, verbose=False):
     """
     Restores files, removing the last 4 chars (that should be '.bak').
     Always overwrites target file if present.
@@ -914,10 +982,20 @@ def restore_backup(bakfiles, verbose=True):
         shutil.move(f, f[:-4])
 
 
-def getDummyAudioTrack(self):
+def erase_backup(bakfiles, verbose=False):
+    """
+    Erases the provided *bakfiles*
+    """
+    if not isinstance(bakfiles, list):
+        bakfiles = [bakfiles]
+    for f in bakfiles:
+        os.remove(f)
+
+
+def getDummyAudioTrack():
     return '\x00'*300*2352
 
-def getDummyDataTrack(self):
+def getDummyDataTrack():
     from zlib import decompress
     from base64 import b64decode
     # Compressed twice to make it smaller/prettier... really... I know it shouldn't...
