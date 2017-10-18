@@ -834,7 +834,7 @@ class GDIshrink():
         return decompress(decompress(b64decode('eNqruPX29um8yw4iDBc8b7qI7maKNUpyFV8iHO41ZelTn+DpFo6FShP5H27/sekf8xFdRkfvyI8BFu7bju8r/jvJTersCT5GBvzgRejlKW17DdaLz/7+8fmy2ctu2gXt33/v+Psu93e7o3eZfvn98IdeSc2ntb8qt1eK+r3v83Per/3r4eGLk5efj7sn8/Z8/5/QzXtW3E69O2WzTLl1oZHU0s+rT5vFXft8J+92aV7S1lNPq3Z2rV+92WKOj16SXM702Udzos59trOoC15i0nW9uXxnzNbTR39+XbB23auf60LP5RXveqWXLrP65avcvX2vY8zq/5R2m8gsV4rl6U76rqN59w73EvmWakmpt//9lh+2f3x5+j95oCcsYvbetix7XA9ivvlY/2LfemOwv9nfXP9/w3bOR6WaswblDKOAWHAg/7tkxo8DNwGBZqUF')))
 
 
-def gdishrink(filename, odir=None, erase_bak=False):
+def gdishrink(filename, odir=None, erase_bak=False, verbose=True):
     """
     Function to shrink a GDI.
 
@@ -845,6 +845,7 @@ def gdishrink(filename, odir=None, erase_bak=False):
     absname = os.path.abspath(filename)
     basedir = os.path.dirname(absname)
     basename = os.path.basename(filename)
+    isize = get_total_gdi_dumpsize(absname) # For saved-space comparison
 
     if odir is None:
         odir = basedir
@@ -857,7 +858,7 @@ def gdishrink(filename, odir=None, erase_bak=False):
         first_file_sector = gdi.get_first_file_sector()
         last_toc_sector = gdi.get_last_toc_sector()
         sanity_check_file_A = gdi.get_file_by_record(gdi._sorted_records(crit='ex_loc')[0])
-
+        
     # 2- We plan the new tracks, considering 3tracks or 5+tracks dumps
     otracks = deepcopy(itracks) # New tracks
     for t in otracks:
@@ -932,8 +933,22 @@ def gdishrink(filename, odir=None, erase_bak=False):
     # 6- Post-shrinking cleaning
     if odir==basedir and erase_bak:
         erase_backup([absname+'.bak']+[t['filename'] for t in itracks_bak])
+
+    # 7- Boasting about the compression... or lack thereof...
+    osize = get_total_gdi_dumpsize(ofilename)
+    if verbose:
+        from math import log10
+        a = (isize-osize)/1e6
+        b = 100*(1-float(osize)/isize)
+        c = 100-b
+        # Aligning decimals with Math
+        d = ' '*(3-int(log10(isize/1e6)))
+        e = ' '*(3-int(log10(osize/1e6)))
+        print('\nGDIshrink results on {}:'.format(filename))
+        print('    Input:\t{}{:0.3f} MB\n    Output:\t{}{:.3f} MB'.format(d, isize/1e6, e, osize/1e6))
+        print('Saved {:.3f} MB, or {:.2f}% at {:.2f}% compression ratio!\n'.format(a,b,c))
         
-    return itracks, otracks # For testing, should be removed once shrinking works fine
+    return isize, osize # For testing, should be removed once shrinking works fine
 
 
 def gen_new_gdifile(_tracks):
@@ -950,6 +965,15 @@ def gen_new_gdifile(_tracks):
                 **t)
     return s
 
+
+def get_total_gdi_dumpsize(filename):
+    filename = os.path.abspath(filename)
+    s=get_filesize(filename)
+    with GDIfile(filename) as gdi:
+        tracks=gdi._gdi
+    for t in tracks:
+        s += get_filesize(t['filename'])
+    return s
 
 def backup_files(files, verbose=False):
     """
