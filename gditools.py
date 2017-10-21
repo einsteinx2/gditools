@@ -150,6 +150,9 @@ class ISO9660(_ISO9660_orig):
         self._gdifile.seek(filerec['ex_loc']*2048)
         return self._gdifile.read(filerec['ex_len'])
 
+    def get_file(self, filename):
+        return self.get_file_by_record(self.get_record(filename))
+
 
     def get_sorttxt(self, crit='ex_loc', prefix='data', dummy='0.0', spacer=1):
         """
