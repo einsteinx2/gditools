@@ -778,7 +778,7 @@ def gdishrink(filename, odir=None, erase_bak=False, verbose=True):
     if odir==basedir:
         itracks_bak = itracks[:3] 
         if numtraks > 3:
-            itracks_bak = itracks_bak + itracks[-1]
+            itracks_bak = itracks_bak + [itracks[-1]]
         backup_files([absname]+[t['filename'] for t in itracks_bak])
         # Track list now point to backup files
         for t in itracks_bak:
